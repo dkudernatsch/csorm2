@@ -1,7 +1,10 @@
 namespace Csorm2.Core
 {
-    public class InternalDbSet
+    public class InternalDbSet<T>: DbSet<T>
     {
-        
+        public InternalDbSet(DbContext ctx) 
+            : base(ctx)
+        {
+        }
     }
 }

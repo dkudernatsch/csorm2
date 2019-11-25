@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ContentModelStore">
+    <e p="C:\Users\Daniel\.nuget\packages\microsoft.net.test.sdk\16.2.0\build\netcoreapp1.0" t="Include">
+      <e p="Microsoft.NET.Test.Sdk.Program.cs" t="Include" />
+    </e>
+    <e p="C:\Users\Daniel\.nuget\packages\xunit.runner.visualstudio\2.4.0\build\netcoreapp1.0\xunit.runner.reporters.netcoreapp10.dll" t="Include" />
+    <e p="C:\Users\Daniel\.nuget\packages\xunit.runner.visualstudio\2.4.0\build\netcoreapp1.0\xunit.runner.utility.netcoreapp10.dll" t="Include" />
+    <e p="C:\Users\Daniel\.nuget\packages\xunit.runner.visualstudio\2.4.0\build\netcoreapp1.0\xunit.runner.visualstudio.dotnetcore.testadapter.dll" t="Include" />
+    <e p="C:\Users\Daniel\.Rider2019.2\config\consoles\db" t="IncludeRecursive" />
+    <e p="C:\Users\Daniel\.Rider2019.2\config\extensions" t="IncludeRecursive" />
+    <e p="C:\Users\Daniel\.Rider2019.2\config\scratches" t="IncludeRecursive" />
+    <e p="C:\Users\Daniel\.Rider2019.2\system\extResources" t="IncludeRecursive" />
+    <e p="C:\Users\Daniel\.Rider2019.2\system\resharper-host\local\Transient\ReSharperHost\v192\SolutionCaches\_csorm2.-1528455237.00" t="ExcludeRecursive" />
+    <e p="C:\Users\Daniel\Nextcloud\Programming\c#\csorm2" t="IncludeFlat">
+      <e p="Csorm.SampleProject" t="IncludeRecursive">
+        <e p="bin" t="ExcludeRecursive" />
+        <e p="Csorm.SampleProject.csproj" t="IncludeRecursive" />
+        <e p="Model" t="Include">
+          <e p="Class.cs" t="Include" />
+          <e p="Course.cs" t="Include" />
+          <e p="Gender.cs" t="Include" />
+          <e p="Person.cs" t="Include" />
+          <e p="Student.cs" t="Include" />
+          <e p="Teacher.cs" t="Include" />
+        </e>
+        <e p="obj" t="ExcludeRecursive">
+          <e p="Debug" t="Include">
+            <e p="netcoreapp3.0" t="Include">
+              <e p="Csorm.SampleProject.AssemblyInfo.cs" t="Include" />
+            </e>
+          </e>
+        </e>
+        <e p="Program.cs" t="Include" />
+        <e p="SampleDbContext.cs" t="Include" />
+      </e>
+      <e p="Csorm2.Core" t="IncludeRecursive">
+        <e p="Attributes" t="Include">
+          <e p="Attr.cs" t="Include" />
+          <e p="Column.cs" t="Include" />
+          <e p="ManyToMany.cs" t="Include" />
+          <e p="ManyToOne.cs" t="Include" />
+          <e p="OneToMany.cs" t="Include" />
+          <e p="OneToOne.cs" t="Include" />
+          <e p="PrimaryKey.cs" t="Include" />
+          <e p="Relation.cs" t="Include" />
+          <e p="Table.cs" t="Include" />
+        </e>
+        <e p="bin" t="ExcludeRecursive" />
+        <e p="Cache" t="Include">
+          <e p="CachedLazyLoader.cs" t="Include" />
+          <e p="CacheEntry.cs" t="Include" />
+          <e p="ILazyLoader.cs" t="Include" />
+          <e p="ObjectCache.cs" t="Include" />
+          <e p="ObjectProvider.cs" t="Include" />
+        </e>
+        <e p="Csorm2.Core.csproj" t="IncludeRecursive" />
+        <e p="DatabaseConnection.cs" t="Include" />
+        <e p="DbContext.cs" t="Include" />
+        <e p="DbContextConfiguration.cs" t="Include" />
+        <e p="DbSet.cs" t="Include" />
+        <e p="DbSetProvider.cs" t="Include" />
+        <e p="extensions" t="Include">
+          <e p="DictExtensions.cs" t="Include" />
+          <e p="DistinctByExtension.cs" t="Include" />
+          <e p="FilterSelectExtension.cs" t="Include" />
+        </e>
+        <e p="InternalDbSet.cs" t="Include" />
+        <e p="Metadata" t="Include">
+          <e p="Attribute.cs" t="Include" />
+          <e p="Builders" t="Include">
+            <e p="AttributeBuilder.cs" t="Include" />
+            <e p="AttributesFromTypeResolver.cs" t="Include" />
+            <e p="EntityBuilder.cs" t="Include" />
+            <e p="ManyToManyRelationResolver.cs" t="Include" />
+            <e p="RelationBuilder.cs" t="Include" />
+            <e p="SchemaBuildContext.cs" t="Include" />
+            <e p="SchemaBuilder.cs" t="Include" />
+          </e>
+          <e p="DbTypeMap.cs" t="Include" />
+          <e p="Entity.cs" t="Include" />
+          <e p="IRelation.cs" t="Include" />
+          <e p="Schema.cs" t="Include" />
+        </e>
+        <e p="obj" t="ExcludeRecursive">
+          <e p="Debug" t="Include">
+            <e p="netcoreapp3.0" t="Include">
+              <e p="Csorm2.Core.AssemblyInfo.cs" t="Include" />
+            </e>
+          </e>
+        </e>
+        <e p="Program.cs" t="Include" />
+        <e p="Query" t="Include">
+          <e p="EntityFactory.cs" t="Include" />
+          <e p="Expression" t="Include">
+            <e p="Accessor.cs" t="Include" />
+            <e p="BinaryExpression.cs" t="Include" />
+            <e p="ISqlExpression.cs" t="Include" />
+            <e p="Value.cs" t="Include" />
+            <e p="WhereSqlFragment.cs" t="Include" />
+          </e>
+          <e p="IQuery.cs" t="Include" />
+          <e p="QueryBuilder.cs" t="Include" />
+          <e p="Select" t="Include">
+            <e p="SelectQuery.cs" t="Include" />
+            <e p="SelectQueryBuilder.cs" t="Include" />
+          </e>
+        </e>
+      </e>
+      <e p="csorm2.sln" t="IncludeFlat" />
+      <e p="Csorm2.Tests" t="IncludeRecursive">
+        <e p="bin" t="ExcludeRecursive" />
+        <e p="Csorm2.Tests.csproj" t="IncludeRecursive" />
+        <e p="obj" t="ExcludeRecursive">
+          <e p="Debug" t="Include">
+            <e p="netcoreapp3.0" t="Include">
+              <e p="Csorm2.Tests.AssemblyInfo.cs" t="Include" />
+            </e>
+          </e>
+        </e>
+        <e p="SampleProjectTests" t="Include">
+          <e p="TestSchemaConstruction.cs" t="Include" />
+        </e>
+        <e p="Schema" t="Include">
+          <e p="SchemaBuilderTests.cs" t="Include" />
+          <e p="TestContext.cs" t="Include" />
+        </e>
+        <e p="TestClasses" t="Include">
+          <e p="A.cs" t="Include" />
+          <e p="B.cs" t="Include" />
+          <e p="Grade.cs" t="Include" />
+          <e p="Student.cs" t="Include" />
+          <e p="TestContext.cs" t="Include" />
+        </e>
+      </e>
+      <e p="packages" t="ExcludeRecursive" />
+    </e>
+  </component>
+</project>

@@ -1,11 +1,10 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Csorm2.Core.Attributes;
 
-namespace Csorm2.Core.Schema.Builders
+namespace Csorm2.Core.Metadata.Builders
 {
     public class EntityBuilder
     {
@@ -14,11 +13,9 @@ namespace Csorm2.Core.Schema.Builders
 
         public Type ClrType { get; private set; }
         public string EntityName { get; private set; }
-        private string? _tableName;
+        private string _tableName;
         
-        private IEnumerable<PropertyInfo>? _attributesFromType = null;
-
-        private Attributes.ManyToMany _manyToMany = null;
+        private IEnumerable<PropertyInfo> _attributesFromType = null;
         
         public EntityBuilder(SchemaBuildContext context)
         {
@@ -41,7 +38,7 @@ namespace Csorm2.Core.Schema.Builders
         {
             var builder = new EntityBuilder(_context)
             {
-                ClrType = null, EntityName = rel.RelationTableName, _tableName = rel.RelationTableName, _manyToMany = null,
+                ClrType = null, EntityName = rel.RelationTableName, _tableName = rel.RelationTableName,
             };
             return builder;
         }

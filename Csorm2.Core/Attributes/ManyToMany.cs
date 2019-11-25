@@ -1,15 +1,12 @@
 using System;
 
-namespace csorm2_core.Attributes
+namespace Csorm2.Core.Attributes
 {
     [AttributeUsage(AttributeTargets.Property)]
-    public class ManyToMany: Relation
+    public class ManyToMany : Relation
     {
-        public ManyToMany(string relationTableName)
-        {
-            RelationTableName = relationTableName;
-        }
-
-        public string RelationTableName { get; }
+        public string RelationTableName { get; set; }
+        public string OtherEntityThisKey { get; set; }
+        public string OtherEntityOtherKey { get; set; }
     }
 }

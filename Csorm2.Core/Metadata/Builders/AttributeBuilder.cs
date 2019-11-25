@@ -2,12 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using Csorm2.Core.Attributes;
 using Csorm2.Core.Extensions;
 
-namespace Csorm2.Core.Schema.Builders
+namespace Csorm2.Core.Metadata.Builders
 {
     public class AttributeBuilder
     {
@@ -38,9 +37,13 @@ namespace Csorm2.Core.Schema.Builders
                 }
                 case Attributes.ManyToOne relation:
                 {
+                    var otherType = _context.AttributeBuilders
+                        .GetValueOrDefault(_context.Entities.First(e => e.Value.ClrType == relation.OtherEntity).Value.EntityName)?
+                        .GetValueOrDefault(relation.OtherKey)?._clrType;
+                    
                     return new AttributeBuilder(_context, Entity)
                     {
-                        _clrType = null, Name = relation.ThisKey, _databaseName = relation.ThisKey
+                        _clrType = otherType, Name = relation.ThisKey, _databaseName = relation.ThisKey
                     };
                 }
                 case Attributes.ManyToMany relation:
@@ -78,9 +81,13 @@ namespace Csorm2.Core.Schema.Builders
                 }
                 case Attributes.OneToMany relation:
                 {
+                    var otherType = _context.AttributeBuilders
+                        .GetValueOrDefault(_context.Entities.First(e => e.Value.ClrType == Entity.ClrType).Value.EntityName)?
+                        .GetValueOrDefault(relation.ThisKey)?._clrType;
+                    
                     return new AttributeBuilder(_context, _context.Entities.First(e => e.Value.ClrType ==relation.OtherEntity).Value)
                     {
-                        _clrType = null, Name = relation.OtherKey, _databaseName = relation.OtherKey
+                        _clrType = otherType, Name = relation.OtherKey, _databaseName = relation.OtherKey
                     };
                 }
             }
@@ -105,7 +112,7 @@ namespace Csorm2.Core.Schema.Builders
             DbType? dbType = null;
             if(_clrType != null) dbType = DbTypeMap.Map(_clrType);
             
-            var attr = new Attribute(_clrType, _databaseName, PropertyInfo, dbType)
+            var attr = new Attribute(_clrType, Name, _databaseName, PropertyInfo, dbType)
             {
                 DeclaredIn = Entity
             };

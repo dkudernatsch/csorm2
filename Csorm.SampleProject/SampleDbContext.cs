@@ -1,7 +1,25 @@
+using System;
+using System.Data.Common;
+using Csorm.SampleProject.Model;
+using Csorm2.Core;
+
 namespace Csorm.SampleProject
 {
-    public class SampleDbContext
+    public class SampleDbContext: DbContext
     {
+        public SampleDbContext(DbConnection connection) : base(connection)
+        {
+        }
+
+        public DbSet<Teacher> Teachers { get; set; }
+        public DbSet<Class> Classes { get; set; }
+        public DbSet<Course> Courses { get; set; }
+        public DbSet<Student> Students { get; set; }
+        
+        public override Action<DbContextConfiguration> OnConfiguring()
+        {
+            return (cfg) => { cfg.ConnectionString = "connect"; };
+        }
         
     }
 }

@@ -1,13 +1,12 @@
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using csorm_core.CSORM.Metadata;
-using csorm_core.CSORM.Query.Expression;
+using Csorm2.Core.Metadata;
+using Csorm2.Core.Query.Expression;
 using DbType = System.Data.DbType;
 
-namespace csorm_core.CSORM.Query
+namespace Csorm2.Core.Query.Select
 {
-    public class SelectQuery: ISqlExpression
+    public class SelectQuery<TEntity>: IQuery<TEntity>
     {
         private readonly Entity _entity;
         public IEnumerable<Attribute> QueryAttributes { get; }
@@ -24,7 +23,7 @@ namespace csorm_core.CSORM.Query
         public string AsSqlString()
         {
             var selectFragment = QueryAttributes
-                .Select(attr => $"{attr.DeclaredInEntity.EntityName}.{attr.Name}")
+                .Select(attr => $"{attr.DeclaredIn.EntityName}.{attr.DataBaseColumn}")
                 .Aggregate("", (s1, s2) => s1 == "" ? $"{s2}" : $"{s1}, {s2}");
 
             var fromFragment = _entity.EntityName;

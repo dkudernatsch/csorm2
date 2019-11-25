@@ -1,4 +1,4 @@
-namespace Csorm2.Core.Schema
+namespace Csorm2.Core.Metadata
 {
     public interface IRelation
     {
@@ -12,13 +12,13 @@ namespace Csorm2.Core.Schema
         Attribute FromKeyAttribute { get; }
 
         // Entity attribute that this relation forms on this Entity
-        Attribute? FromEntityAttribute { get; }
+        Attribute FromEntityAttribute { get; }
 
         // foreign/primary key attribute on other entity
         Attribute ToKeyAttribute { get; }
 
         // Entity attribute that this relation forms on other Entity
-        Attribute? ToEntityAttribute { get; }
+        Attribute ToEntityAttribute { get; }
     }
 
     public class AbstractRelation : IRelation
@@ -44,13 +44,13 @@ namespace Csorm2.Core.Schema
         public Attribute FromKeyAttribute { get; set; }
 
         // Entity attribute that this relation forms on this Entity
-        public Attribute? FromEntityAttribute { get; set; }
+        public Attribute FromEntityAttribute { get; set; }
 
         // foreign/primary key attribute on other entity
         public Attribute ToKeyAttribute { get; set; }
 
         // Entity attribute that this relation forms on other Entity
-        public Attribute? ToEntityAttribute { get; set; }
+        public Attribute ToEntityAttribute { get; set; }
     }
 
     public class OneToOne : AbstractRelation

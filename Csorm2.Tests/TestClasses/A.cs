@@ -7,7 +7,8 @@ namespace Csorm2.Tests.TestClasses
     [Table("t_a")]
     public class A
     {
-        [PrimaryKey] [Column("a_id")] 
+        [PrimaryKey] 
+        [Column("a_id")] 
         public long Id { get; set; }
         
         public string TestData { get; set; }

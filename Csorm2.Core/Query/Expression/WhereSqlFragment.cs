@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Data;
 
-namespace csorm_core.CSORM.Query.Expression
+namespace Csorm2.Core.Query.Expression
 {
     public class WhereSqlFragment: ISqlExpression
     {

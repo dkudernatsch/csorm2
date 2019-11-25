@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using Microsoft.VisualBasic;
 
-namespace csorm_core.CSORM.Query.Expression
+namespace Csorm2.Core.Query.Expression
 {
     public class Accessor: ISqlExpression
     {

@@ -1,10 +1,10 @@
+using System;
 using System.Linq;
-using csorm_core.CSORM.Metadata;
+using Csorm2.Core.Metadata;
+using Csorm2.Core.Query.Select;
 
-namespace csorm_core.CSORM.Query
+namespace Csorm2.Core.Query
 {
-
-
     public class QueryBuilder
     {
         private DbContext _ctx;
@@ -13,19 +13,19 @@ namespace csorm_core.CSORM.Query
         {
             _ctx = ctx;
         }
-
-        public SelectFromWhereQueryBuilder Select<TEntity>()
+        
+        public SelectFromWhereQueryBuilder<TEntity> Select<TEntity>()
         {
             var entity = _ctx.Schema.EntityTypeMap[typeof(TEntity)];
-            return Select(entity);
+            return Select<TEntity>(entity);
         }
         
-        public SelectFromWhereQueryBuilder Select(Entity entity)
+        public SelectFromWhereQueryBuilder<TEntity> Select<TEntity>(Entity entity)
         {
             var queryBuilder = new SelectQueryBuilder(_ctx);
             return queryBuilder
-                .FromTable(entity.EntityName)
-                .Select(entity.Attributes.Values.Where(attr => attr.IsPrimitive).Select(attr => attr.Name));
+                .FromTable<TEntity>(entity.EntityName)
+                .Select(entity.Attributes.Values.Where(attr => !attr.IsEntityType).Select(attr => attr.DataBaseColumn));
         }
         
     }

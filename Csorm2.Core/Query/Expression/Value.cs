@@ -1,10 +1,10 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Data;
-using Microsoft.VisualBasic.CompilerServices;
+using Csorm2.Core.Metadata;
+using Attribute = Csorm2.Core.Metadata.Attribute;
 
-namespace csorm_core.CSORM.Query.Expression
+namespace Csorm2.Core.Query.Expression
 {
     public class Value: ISqlExpression
     {
@@ -12,6 +12,7 @@ namespace csorm_core.CSORM.Query.Expression
         {
             _name = name;
             _value = value;
+            _dbType = dbType;
         }
 
         private string _name;
@@ -26,6 +27,16 @@ namespace csorm_core.CSORM.Query.Expression
         public IEnumerable<(DbType, string, object)> GetParameters()
         {
             return new List<(DbType, string, object)>{(_dbType, _name, _value)};
+        }
+
+        public static Value FromAttr(object val, Attribute attr)
+        {
+            return new Value(attr.Name, val, attr.DatabaseType.GetValueOrDefault());
+        }
+        
+        public static Value Val<T>(T i, string name)
+        {
+            return new Value(name, i, DbTypeMap.Map(typeof(T)).GetValueOrDefault(DbType.String));
         }
         
         public static Value Integer(int i, string name){ return new Value(name, i, DbType.Int32);}

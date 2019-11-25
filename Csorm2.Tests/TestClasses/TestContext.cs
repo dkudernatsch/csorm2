@@ -1,7 +1,21 @@
+using System;
+using System.Data.Common;
+using Csorm2.Core;
+
 namespace Csorm2.Tests.TestClasses
 {
-    public class TestContext
+    public class TestContext: DbContext
     {
+        public TestContext(DbConnection connection) : base(connection)
+        {
+        }
+
+        public DbSet<Student> Students { get; set; }
+        public DbSet<Grade> Grades { get; set; }
         
+        public override Action<DbContextConfiguration> OnConfiguring()
+        {
+            return (cfg) => { cfg.ConnectionString = ""; };
+        }
     }
 }

@@ -1,11 +1,8 @@
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
-using csorm_core.CSORM.Metadata;
-using csorm_core.CSORM.Query.Expression;
+using Csorm2.Core.Query.Expression;
 
-namespace csorm_core.CSORM.Query
+namespace Csorm2.Core.Query.Select
 {
     public class SelectQueryBuilder
     {
@@ -16,15 +13,15 @@ namespace csorm_core.CSORM.Query
             _ctx = ctx;
         }
 
-        public SelectFromQueryBuilder FromTable(string table)
+        public SelectFromQueryBuilder<TEntity> FromTable<TEntity>(string table)
         {
-            return new SelectFromQueryBuilder(_ctx, table);
+            return new SelectFromQueryBuilder<TEntity>(_ctx, table);
         }
         
         
     }
 
-    public class SelectFromQueryBuilder
+    public class SelectFromQueryBuilder<TEntity>
     {
         private readonly string _tableName;
         private readonly DbContext _ctx;
@@ -35,14 +32,14 @@ namespace csorm_core.CSORM.Query
             _ctx = ctx;
         }
 
-        public SelectFromWhereQueryBuilder Select(IEnumerable<string> fields)
+        public SelectFromWhereQueryBuilder<TEntity> Select(IEnumerable<string> fields)
         {
-            return new SelectFromWhereQueryBuilder(_ctx, _tableName, fields);
+            return new SelectFromWhereQueryBuilder<TEntity>(_ctx, _tableName, fields);
         }
         
     }
 
-    public class SelectFromWhereQueryBuilder
+    public class SelectFromWhereQueryBuilder<TEntity>
     {
         
         private readonly string _tableName;
@@ -57,16 +54,16 @@ namespace csorm_core.CSORM.Query
             _ctx = ctx;
         }
 
-        public SelectFromWhereQueryBuilder Where(WhereSqlFragment filter)
+        public SelectFromWhereQueryBuilder<TEntity> Where(WhereSqlFragment filter)
         {
             _wheres.Add(filter);
             return this;
         }
 
-        public SelectQuery Build()
+        public SelectQuery<TEntity> Build()
         {
             var entity = _ctx.Schema.EntityNameMap[_tableName];
-            return new SelectQuery(entity, entity.Attributes.Values.Where(attr => attr.IsPrimitive), _wheres);
+            return new SelectQuery<TEntity>(entity, entity.Attributes.Values.Where(attr => !attr.IsEntityType), _wheres);
         }
     }
 }

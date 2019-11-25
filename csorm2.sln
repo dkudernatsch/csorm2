@@ -1,6 +1,10 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csorm2-core", "csorm2-core\csorm2-core.csproj", "{C484C125-7A29-4280-B392-00E80392CE37}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Csorm2.Core", "Csorm2.Core\Csorm2.Core.csproj", "{C484C125-7A29-4280-B392-00E80392CE37}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Csorm2.Tests", "Csorm2.Tests\Csorm2.Tests.csproj", "{F84559C5-1299-4C23-8633-27CBDB092385}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Csorm.SampleProject", "Csorm.SampleProject\Csorm.SampleProject.csproj", "{BCEE2222-B6E9-4B31-9EF5-6AC08F77044A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -12,5 +16,13 @@ Global
 		{C484C125-7A29-4280-B392-00E80392CE37}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C484C125-7A29-4280-B392-00E80392CE37}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C484C125-7A29-4280-B392-00E80392CE37}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F84559C5-1299-4C23-8633-27CBDB092385}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F84559C5-1299-4C23-8633-27CBDB092385}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F84559C5-1299-4C23-8633-27CBDB092385}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F84559C5-1299-4C23-8633-27CBDB092385}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BCEE2222-B6E9-4B31-9EF5-6AC08F77044A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BCEE2222-B6E9-4B31-9EF5-6AC08F77044A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BCEE2222-B6E9-4B31-9EF5-6AC08F77044A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BCEE2222-B6E9-4B31-9EF5-6AC08F77044A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -1,6 +1,6 @@
 using System;
 
-namespace csorm2_core.Attributes
+namespace Csorm2.Core.Attributes
 {
     [AttributeUsage(AttributeTargets.Class, 
         AllowMultiple = false, 

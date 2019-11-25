@@ -1,7 +1,7 @@
 using System;
-using csorm_core.CSORM.Metadata;
+using Csorm2.Core.Metadata;
 
-namespace csorm_core.CSORM.Query
+namespace Csorm2.Core.Query
 {
     public class EntityFactory
     {
@@ -16,7 +16,7 @@ namespace csorm_core.CSORM.Query
         
         public object Create()
         {
-            return _entity.EntityType.GetConstructor(new Type[]{})?.Invoke(new object[]{});
+            return _entity.ClrType.GetConstructor(new Type[]{})?.Invoke(new object[]{});
         }
     }
 }

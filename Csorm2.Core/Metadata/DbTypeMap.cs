@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
 
-namespace Csorm2.Core.Schema
+namespace Csorm2.Core.Metadata
 {
     public static class DbTypeMap
     {
-        private static readonly ReadOnlyDictionary<Type, DbType> _map = new ReadOnlyDictionary<Type, DbType>(
-            new Dictionary<Type, DbType>
+        private static readonly ReadOnlyDictionary<Type, DbType?> _map = new ReadOnlyDictionary<Type, DbType?>(
+            new Dictionary<Type, DbType?>
             {
                 {typeof(byte), DbType.Byte},
                 {typeof(sbyte), DbType.SByte},
@@ -48,9 +48,9 @@ namespace Csorm2.Core.Schema
         );
 
 
-        public static DbType Map(Type t)
+        public static DbType? Map(Type t)
         {
-            return _map.GetValueOrDefault(t);
+            return _map.GetValueOrDefault(t, null);
         }
     }
 }

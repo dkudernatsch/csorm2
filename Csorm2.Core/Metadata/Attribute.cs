@@ -1,21 +1,20 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Data;
 using System.Reflection;
-using Csorm2.Core.Attributes;
 
-namespace Csorm2.Core.Schema
+namespace Csorm2.Core.Metadata
 {
     public class Attribute
     {
         public Attribute(
             Type clrType, 
+            string name,
             string dataBaseColumn, 
-            PropertyInfo? propertyInfo,
+            PropertyInfo propertyInfo,
             DbType? databaseType)
         {
             ClrType = clrType;
+            Name = name;
             DataBaseColumn = dataBaseColumn;
             PropertyInfo = propertyInfo;
             DatabaseType = databaseType;
@@ -24,11 +23,13 @@ namespace Csorm2.Core.Schema
         public Entity DeclaredIn { get; set; }
         
         public Type ClrType { get; }
- 
+
+        public string Name { get; set; }
+        
         /// <summary>
         /// C# Property name
         /// </summary>
-        public string? PropertyName => PropertyInfo?.Name;
+        public string PropertyName => PropertyInfo?.Name;
         
         /// <summary>
         /// Database Column field
@@ -37,13 +38,13 @@ namespace Csorm2.Core.Schema
         
         // if we dont have a backing field the attribute is a shadow property and we
         // cant simply look into the type to get its value
-        public PropertyInfo? PropertyInfo { get; } = null;
+        public PropertyInfo PropertyInfo { get; } = null;
         public bool IsShadowAttribute => PropertyInfo == null;
         
         // if we cant find a matching dbType only other entities are valid
         public DbType? DatabaseType { get; }
         public bool IsEntityType => DatabaseType == null;
 
-        public IRelation? Relation { get; set; } = null;
+        public IRelation Relation { get; set; } = null;
     }
 }

@@ -1,6 +1,8 @@
+using Csorm2.Core.Query.Expression;
+
 namespace Csorm2.Core.Query
 {
-    public interface IQuery
+    public interface IQuery<TEntity> : ISqlExpression
     {
         
     }

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace csorm2_core
+namespace Csorm2.Core
 {
     class Program
     {

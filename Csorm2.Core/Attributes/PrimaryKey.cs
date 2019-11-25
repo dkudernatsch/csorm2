@@ -1,11 +1,11 @@
 using System;
 
-namespace csorm2_core.Attributes
+namespace Csorm2.Core.Attributes
 {
     [AttributeUsage(AttributeTargets.Property)]
-    public class PrimaryKey: Column
+    public class PrimaryKey: CsormAttribute
     {
-        public PrimaryKey(string columnName) : base(columnName)
+        public PrimaryKey()
         {
         }
     }

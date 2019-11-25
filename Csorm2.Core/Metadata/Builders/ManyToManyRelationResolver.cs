@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace Csorm2.Core.Schema.Builders
+namespace Csorm2.Core.Metadata.Builders
 {
     public static class ManyToManyRelationResolver
     {

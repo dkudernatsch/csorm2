@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Csorm2.Core.Schema.Builders
+namespace Csorm2.Core.Metadata.Builders
 {
     public class SchemaBuildContext
     {

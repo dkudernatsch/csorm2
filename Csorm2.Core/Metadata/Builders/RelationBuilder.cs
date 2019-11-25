@@ -4,7 +4,7 @@ using System.Linq;
 using Csorm2.Core.Attributes;
 using Csorm2.Core.Extensions;
 
-namespace Csorm2.Core.Schema.Builders
+namespace Csorm2.Core.Metadata.Builders
 {
     public class RelationBuilder
     {
@@ -21,13 +21,13 @@ namespace Csorm2.Core.Schema.Builders
         public  Attribute FromKeyAttribute { get; set; }
 
         // Entity attribute that this relation forms on this Entity
-        public Attribute? FromEntityAttribute { get; set; }
+        public Attribute FromEntityAttribute { get; set; }
 
         // foreign/primary key attribute on other entity
         public Attribute ToKeyAttribute { get; set; }
 
         // Entity attribute that this relation forms on other Entity
-        public Attribute? ToEntityAttribute { get; }
+        public Attribute ToEntityAttribute { get; }
         
         // 'shadow entity' necessary for this relation to exists
         public Entity BetweenEntity { get; set; }

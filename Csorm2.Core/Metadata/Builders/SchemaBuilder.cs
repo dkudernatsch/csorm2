@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -7,7 +6,7 @@ using System.Reflection;
 using Csorm2.Core.Attributes;
 using Csorm2.Core.Extensions;
 
-namespace Csorm2.Core.Schema.Builders
+namespace Csorm2.Core.Metadata.Builders
 {
     public class SchemaBuilder
     {
@@ -17,26 +16,26 @@ namespace Csorm2.Core.Schema.Builders
         }
 
         private IEnumerable<Type> _specifiedEntityTypes;
-        private SchemaBuildContext _context = new SchemaBuildContext();
+        public SchemaBuildContext Context { get; } = new SchemaBuildContext();
 
         private void ScanForEntities()
         {
             var fromTypeBuilders = _specifiedEntityTypes
-                .Select(e => new EntityBuilder(_context).FromType(e))
+                .Select(e => new EntityBuilder(Context).FromType(e))
                 .ToDictionary(b => b.EntityName);
-            _context.EntityBuilders.AddDict(fromTypeBuilders);
+            Context.EntityBuilders.AddDict(fromTypeBuilders);
 
             var fromRelationsBuilders = ManyToManyRelationResolver
-                .ScanManyToManyRelation(_context).ToList()
+                .ScanManyToManyRelation(Context).ToList()
                 .DistinctBy(b => b.EntityName)
                 .ToDictionary(b => b.EntityName);
 
-            _context.EntityBuilders.AddDict(fromRelationsBuilders);
+            Context.EntityBuilders.AddDict(fromRelationsBuilders);
         }
 
         private void BuildEntities()
         {
-            foreach (var (_, entityBuilder) in _context.EntityBuilders)
+            foreach (var (_, entityBuilder) in Context.EntityBuilders)
             {
                 entityBuilder.Build();
             }
@@ -44,13 +43,13 @@ namespace Csorm2.Core.Schema.Builders
 
         private void ScanForAttributes()
         {
-            var attributesFromTypes = _context.EntityBuilders.Values
+            var attributesFromTypes = Context.EntityBuilders.Values
                 .Select(eb => (eb, eb.ClrType))
                 .Where(tup => tup.ClrType != null)
                 .SelectMany(tuple =>
                     AttributesFromTypeResolver.ValidAttributesFromType(tuple.ClrType).Select(prop => (tuple.eb, prop)))
                 .Select(tuple =>
-                    new AttributeBuilder(_context, _context.Entities[tuple.eb.EntityName]).FromProperty(tuple.prop))
+                    new AttributeBuilder(Context, Context.Entities[tuple.eb.EntityName]).FromProperty(tuple.prop))
                 .GroupBy(ab => ab.Entity.EntityName)
                 .ToDictionary(grp => grp.Key, grp => grp.ToDictionary(attr => attr.Name));
 
@@ -58,13 +57,13 @@ namespace Csorm2.Core.Schema.Builders
             {
                 foreach (var (_, attributeBuilder) in value)
                 {
-                    _context.AttributeBuilders.GetOrInsert(key,
+                    Context.AttributeBuilders.GetOrInsert(key,
                         new Dictionary<string, AttributeBuilder>())[attributeBuilder.Name] = attributeBuilder;
                 }
                 
             }
             
-            var attributesFromRelations = _context.AttributeBuilders.ToDictionary(kv => kv.Key, kv => kv.Value)
+            var attributesFromRelations = Context.AttributeBuilders.ToDictionary(kv => kv.Key, kv => kv.Value)
                 .SelectMany(tup => tup.Value.Values.Select(vals => (Entity: tup.Key, Attribute: vals)))
                 .Select(tup =>
                     (Entity: tup.Entity
@@ -72,7 +71,7 @@ namespace Csorm2.Core.Schema.Builders
                     ))
                 .Where(t => t.Relation != null)
                 .FilterSelect(tup =>
-                    new AttributeBuilder(_context, _context.Entities[tup.Entity]).FromRelation(tup.Relation))
+                    new AttributeBuilder(Context, Context.Entities[tup.Entity]).FromRelation(tup.Relation))
                 .DistinctBy(attr => (attr.Name, attr.Entity.EntityName))
                 .GroupBy(ab => ab.Entity.EntityName)
                 .ToDictionary(grp => grp.Key, grp => grp.ToDictionary(attr => attr.Name));
@@ -81,7 +80,7 @@ namespace Csorm2.Core.Schema.Builders
             {
                 foreach (var (_, attributeBuilder) in value)
                 {
-                    _context.AttributeBuilders.GetOrInsert(key,
+                    Context.AttributeBuilders.GetOrInsert(key,
                         new Dictionary<string, AttributeBuilder>())[attributeBuilder.Name] = attributeBuilder;
                 }
                 
@@ -90,7 +89,7 @@ namespace Csorm2.Core.Schema.Builders
 
         private void BuildAttributes()
         {
-            foreach (var builder in _context.AttributeBuilders.SelectMany(ab => ab.Value.Values))
+            foreach (var builder in Context.AttributeBuilders.SelectMany(ab => ab.Value.Values))
             {
                 builder.Build();
             }
@@ -99,22 +98,22 @@ namespace Csorm2.Core.Schema.Builders
 
         private void ScanForRelations()
         {
-            var relationsFromRelationAttributes = _context.Attributes.Values
+            var relationsFromRelationAttributes = Context.Attributes.Values
                 .SelectMany(p => p?.Values)
                 .FilterSelect(p => p)
                 .Select(attr => (Attribute: attr,
                     Relation: attr.PropertyInfo?.GetCustomAttribute(typeof(Relation)) as Relation))
                 .Where(tup => tup.Relation != null)
-                .Select(tup => new RelationBuilder(_context, tup.Attribute).FromRelation(tup.Relation))
+                .Select(tup => new RelationBuilder(Context, tup.Attribute).FromRelation(tup.Relation))
                 .GroupBy(relBuilder => relBuilder.FromEntity.EntityName)
                 .ToDictionary(grp => grp.Key, grp => grp.ToDictionary(rel => rel.FromEntityAttribute.PropertyName));
 
-            _context.RelationBuilders.AddDict(relationsFromRelationAttributes);
+            Context.RelationBuilders.AddDict(relationsFromRelationAttributes);
         }
 
         private void BuildRelations()
         {
-            foreach (var builder in _context.RelationBuilders.SelectMany(ab => ab.Value.Values))
+            foreach (var builder in Context.RelationBuilders.SelectMany(ab => ab.Value.Values))
             {
                 builder.Build();
             }
@@ -130,6 +129,13 @@ namespace Csorm2.Core.Schema.Builders
 
             ScanForRelations();
             BuildRelations();
+
+            foreach (var (entityName, entity) in Context.Entities)
+            {
+                entity.Attributes = new ReadOnlyDictionary<string, Attribute>(
+                    Context.Attributes[entityName]   
+                );
+            }
         }
     }
 }
