@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Csorm2.Core.Metadata;
 using Csorm2.Core.Query.Expression;
 
 namespace Csorm2.Core.Query.Select
@@ -15,7 +16,9 @@ namespace Csorm2.Core.Query.Select
 
         public SelectFromQueryBuilder<TEntity> FromTable<TEntity>(string table)
         {
-            return new SelectFromQueryBuilder<TEntity>(_ctx, table);
+            var from = new EntityFrom(_ctx.Schema.EntityNameMap.Values.First(e => e.TableName == table));
+            
+            return new SelectFromQueryBuilder<TEntity>(_ctx, from);
         }
         
         
@@ -23,18 +26,38 @@ namespace Csorm2.Core.Query.Select
 
     public class SelectFromQueryBuilder<TEntity>
     {
-        private readonly string _tableName;
+        private readonly IFrom _from;
         private readonly DbContext _ctx;
 
-        public SelectFromQueryBuilder(DbContext ctx, string tableName)
+        public SelectFromQueryBuilder(DbContext ctx, IFrom from)
         {
-            _tableName = tableName;
+            _from = from;
             _ctx = ctx;
         }
 
+        public SelectFromQueryBuilder<TEntity> Join(string otherTable, string myKey, string otherKey)
+        {
+            var entity = _ctx.Schema.EntityTypeMap[typeof(TEntity)];
+            var myKeyAttr = entity.Attributes.Values.First(attr => attr.DataBaseColumn == myKey);
+            
+            var otherEntity = _ctx.Schema.EntityTypeMap.Values.First(e => e.TableName == otherTable);
+            var otherKeyAttr = otherEntity.Attributes.Values.First(attr => attr.DataBaseColumn == otherKey);
+            
+            var join = new InnerJoin(_from ?? new EntityFrom(entity), myKeyAttr, new EntityFrom(otherEntity), otherKeyAttr);
+            
+            return new SelectFromQueryBuilder<TEntity>(_ctx, join);
+        }
+        
+        public SelectFromQueryBuilder<TEntity> Join(Entity otherTable, Attribute myKey, Attribute otherKey)
+        {
+            var entity = _ctx.Schema.EntityTypeMap[typeof(TEntity)];
+            var join = new InnerJoin(_from ?? new EntityFrom(entity), myKey, new EntityFrom(otherTable), otherKey);
+            return  new SelectFromQueryBuilder<TEntity>(_ctx, join);
+        }
+        
         public SelectFromWhereQueryBuilder<TEntity> Select(IEnumerable<string> fields)
         {
-            return new SelectFromWhereQueryBuilder<TEntity>(_ctx, _tableName, fields);
+            return new SelectFromWhereQueryBuilder<TEntity>(_ctx, _from, fields);
         }
         
     }
@@ -42,14 +65,14 @@ namespace Csorm2.Core.Query.Select
     public class SelectFromWhereQueryBuilder<TEntity>
     {
         
-        private readonly string _tableName;
+        private readonly IFrom _from;
         private IEnumerable<string> _fields;
         private readonly IList<WhereSqlFragment> _wheres = new List<WhereSqlFragment>();
         private readonly DbContext _ctx;
 
-        public SelectFromWhereQueryBuilder(DbContext ctx, string tableName, IEnumerable<string> fields)
+        public SelectFromWhereQueryBuilder(DbContext ctx, IFrom from, IEnumerable<string> fields)
         {
-            _tableName = tableName;
+            _from = from;
             _fields = fields;
             _ctx = ctx;
         }
@@ -62,8 +85,8 @@ namespace Csorm2.Core.Query.Select
 
         public SelectQuery<TEntity> Build()
         {
-            var entity = _ctx.Schema.EntityNameMap[_tableName];
-            return new SelectQuery<TEntity>(entity, entity.Attributes.Values.Where(attr => !attr.IsEntityType), _wheres);
+            var entity = _ctx.Schema.EntityTypeMap[typeof(TEntity)];
+            return new SelectQuery<TEntity>( _from, entity.Attributes.Values.Where(attr => !attr.IsEntityType), _wheres);
         }
     }
 }

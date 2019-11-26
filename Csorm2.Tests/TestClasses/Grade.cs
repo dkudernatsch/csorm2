@@ -16,7 +16,6 @@ namespace Csorm2.Tests.TestClasses
 
         private Student _student;
         
-        [JsonIgnore]
         [IgnoreDataMember]
         [ManyToOne(OtherEntity = typeof(Student), ThisKey = "FK_Grade_Student", OtherKey = "Id")]
         public Student Student {

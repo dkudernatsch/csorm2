@@ -102,6 +102,9 @@
           <e p="IQuery.cs" t="Include" />
           <e p="QueryBuilder.cs" t="Include" />
           <e p="Select" t="Include">
+            <e p="EntityFrom.cs" t="Include" />
+            <e p="IFrom.cs" t="Include" />
+            <e p="InnerJoin.cs" t="Include" />
             <e p="SelectQuery.cs" t="Include" />
             <e p="SelectQueryBuilder.cs" t="Include" />
           </e>
@@ -128,6 +131,7 @@
         <e p="TestClasses" t="Include">
           <e p="A.cs" t="Include" />
           <e p="B.cs" t="Include" />
+          <e p="Course.cs" t="Include" />
           <e p="Grade.cs" t="Include" />
           <e p="Student.cs" t="Include" />
           <e p="TestContext.cs" t="Include" />

@@ -11,6 +11,6 @@ namespace Csorm2.Core.Cache
         }
 
         public object EntityObject { get; }
-        public Dictionary<string, object> originalEntity = new Dictionary<string, object>();
+        public Dictionary<string, object> OriginalEntity = new Dictionary<string, object>();
     }
 }

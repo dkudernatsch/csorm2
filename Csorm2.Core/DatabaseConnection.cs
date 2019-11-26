@@ -25,6 +25,7 @@ namespace Csorm2.Core
 
         public IEnumerable<TEntity> Select<TEntity>(IQuery<TEntity> query)
         {
+            var cache = _ctx.Cache;
             using var cmd = _inner.CreateCommand();
             cmd.CommandText = query.AsSqlString();
             foreach (var (type, id, value) in query.GetParameters())
@@ -37,8 +38,7 @@ namespace Csorm2.Core
             }
 
             using var reader = cmd.ExecuteReader();
-            var cache = _ctx.Cache;
-
+            
             while (reader.Read())
             {
                 var entity = _ctx.Schema.EntityTypeMap[typeof(TEntity)];
@@ -53,7 +53,7 @@ namespace Csorm2.Core
                     if (attr.IsEntityType) continue;
 
                     var value = reader[attr.DataBaseColumn];
-                    entry.originalEntity[attrName] = value;
+                    entry.OriginalEntity[attrName] = value;
                     if (!attr.IsShadowAttribute)
                     {
                         attr.PropertyInfo.SetMethod.Invoke(entry.EntityObject, new[] {value});

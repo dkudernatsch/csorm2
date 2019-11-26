@@ -8,14 +8,13 @@ namespace Csorm2.Core.Query.Select
 {
     public class SelectQuery<TEntity>: IQuery<TEntity>
     {
-        private readonly Entity _entity;
+        private readonly IFrom _from;
         public IEnumerable<Attribute> QueryAttributes { get; }
         private readonly IList<WhereSqlFragment> _whereFilters;
-        public Entity QueryEntity => _entity;
 
-        internal SelectQuery(Entity entity, IEnumerable<Attribute> attributes, IList<WhereSqlFragment> whereFilters)
+        internal SelectQuery(IFrom from, IEnumerable<Attribute> attributes, IList<WhereSqlFragment> whereFilters)
         {
-            _entity = entity;
+            _from = from;
             QueryAttributes = attributes;
             _whereFilters = whereFilters;
         }
@@ -26,7 +25,7 @@ namespace Csorm2.Core.Query.Select
                 .Select(attr => $"{attr.DeclaredIn.EntityName}.{attr.DataBaseColumn}")
                 .Aggregate("", (s1, s2) => s1 == "" ? $"{s2}" : $"{s1}, {s2}");
 
-            var fromFragment = _entity.EntityName;
+            var fromFragment = _from.AsFromFragment();
             var whereFragment = _whereFilters.Select(w => w.AsSqlString()).Aggregate("", (w1, w2) => w1 == "" ? $"{w2}" :$"{w1} AND {w2}");
             
             return $"SELECT {selectFragment} " +
