@@ -1,4 +1,5 @@
 using System;
+using System.Data;
 using System.Data.Common;
 using Csorm.SampleProject.Model;
 using Csorm2.Core;
@@ -7,7 +8,7 @@ namespace Csorm.SampleProject
 {
     public class SampleDbContext: DbContext
     {
-        public SampleDbContext(DbConnection connection) : base(connection)
+        public SampleDbContext(Func<IDbConnection> connection) : base(connection)
         {
         }
 

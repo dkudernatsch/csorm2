@@ -37,6 +37,7 @@
       <e p="Csorm2.Core" t="IncludeRecursive">
         <e p="Attributes" t="Include">
           <e p="Attr.cs" t="Include" />
+          <e p="AutoIncrement.cs" t="Include" />
           <e p="Column.cs" t="Include" />
           <e p="ManyToMany.cs" t="Include" />
           <e p="ManyToOne.cs" t="Include" />

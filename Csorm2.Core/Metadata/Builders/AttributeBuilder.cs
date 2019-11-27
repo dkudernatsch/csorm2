@@ -17,7 +17,8 @@ namespace Csorm2.Core.Metadata.Builders
         public string Name { get; private set; }
         private string _databaseName;
         public PropertyInfo PropertyInfo { get; private set; }
-
+        private bool isAutoInc = false;
+        
         public AttributeBuilder(SchemaBuildContext context, Entity entity)
         {
             _context = context;

@@ -13,20 +13,20 @@ namespace Csorm2.Core
     public class DatabaseConnection
     {
         private readonly DbContext _ctx;
-        private readonly DbConnection _inner;
+        private readonly Func<IDbConnection> _connProvider;
         
-        public DatabaseConnection(DbContext ctx, DbConnection conn)
+        public DatabaseConnection(DbContext ctx, Func<IDbConnection> connProvider)
         {
             _ctx = ctx;
-            _inner = conn;
-            
-            if(_inner.State == ConnectionState.Closed) _inner.Open();
+            _connProvider = connProvider;
         }
 
         public IEnumerable<TEntity> Select<TEntity>(IQuery<TEntity> query)
         {
+            using var conn = _connProvider.Invoke();
+            conn.Open();
             var cache = _ctx.Cache;
-            using var cmd = _inner.CreateCommand();
+            using var cmd = conn.CreateCommand();
             cmd.CommandText = query.AsSqlString();
             foreach (var (type, id, value) in query.GetParameters())
             {

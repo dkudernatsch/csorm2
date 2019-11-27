@@ -11,13 +11,15 @@ namespace Csorm2.Core.Metadata
             string name,
             string dataBaseColumn, 
             PropertyInfo propertyInfo,
-            DbType? databaseType)
+            DbType? databaseType, 
+            bool isAutoInc)
         {
             ClrType = clrType;
             Name = name;
             DataBaseColumn = dataBaseColumn;
             PropertyInfo = propertyInfo;
             DatabaseType = databaseType;
+            IsAutoInc = isAutoInc;
         }
         
         public Entity DeclaredIn { get; set; }
@@ -46,5 +48,7 @@ namespace Csorm2.Core.Metadata
         public bool IsEntityType => DatabaseType == null;
 
         public IRelation Relation { get; set; } = null;
+
+        public bool IsAutoInc { get; set; } = false;
     }
 }

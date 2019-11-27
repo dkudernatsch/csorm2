@@ -30,22 +30,12 @@ namespace Csorm2.Tests.Schema
         [Fact]
         public void Test()
         {
-            var postgres = new NpgsqlConnection("Host=10.10.1.1;Port=54321;User Id=csorm;Password=csorm;Database=csorm");
-            var ctx = new TestClasses.TestContext(postgres);
-            var db = ctx.Connection;
-            
-            var course = db.Select(new QueryBuilder(ctx)
-                .Select<Course>()
-                .Build());
+            var ctx = new TestClasses.TestContext(
+                () => new NpgsqlConnection("Host=10.10.1.1;Port=54321;User Id=csorm;Password=csorm;Database=csorm"));
 
-            var c = course.First();
+            var student = ctx.Students.Find(1);
             
-            
-            
-            //Assert.NotEqual(s1, s2);
-
-           
-            _testOutputHelper.WriteLine(JsonConvert.SerializeObject(c));
+            _testOutputHelper.WriteLine(JsonConvert.SerializeObject(student));
             //_testOutputHelper.WriteLine(JsonConvert.SerializeObject(s2));
             
         }

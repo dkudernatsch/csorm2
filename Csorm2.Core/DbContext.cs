@@ -1,4 +1,5 @@
 using System;
+using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Reflection;
@@ -11,7 +12,7 @@ namespace Csorm2.Core
 {
  public abstract class DbContext
     {
-        public DbContext(DbConnection connection)
+        public DbContext(Func<IDbConnection> connection)
         {
             OnConfiguring()(Config);
             InitializeDbSets();
