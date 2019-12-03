@@ -5,12 +5,13 @@ using System.Linq;
 using System.Reflection;
 using Csorm2.Core.Attributes;
 using Csorm2.Core.Cache;
+using Csorm2.Core.Cache.ChangeTracker;
 using Csorm2.Core.Metadata;
 using Csorm2.Core.Metadata.Builders;
 
 namespace Csorm2.Core
 {
- public abstract class DbContext
+    public abstract class DbContext
     {
         public DbContext(Func<IDbConnection> connection)
         {
@@ -18,23 +19,27 @@ namespace Csorm2.Core
             InitializeDbSets();
             InitializeSchema();
             Connection = new DatabaseConnection(this, connection);
+            ChangeTracker = new ChangeTracker(this);
         }
-        
+
         public Schema Schema { get; private set; } = new Schema();
-        
+
         public ObjectCache Cache { get; } = new ObjectCache();
-        
+
         public DbContextConfiguration Config { get; } = new DbContextConfiguration();
 
         public DatabaseConnection Connection { get; }
+
+        public ChangeTracker ChangeTracker { get; }
 
         //creates generic implementations for each of the users DbSets
         private void InitializeDbSets()
         {
             var dbSetProperties = GetType().GetProperties()
-                .Where(p => p.PropertyType.IsGenericType && p.PropertyType.GetGenericTypeDefinition() == typeof(DbSet<>));
+                .Where(p => p.PropertyType.IsGenericType &&
+                            p.PropertyType.GetGenericTypeDefinition() == typeof(DbSet<>));
 
-            foreach (var dbSetProperty in dbSetProperties) 
+            foreach (var dbSetProperty in dbSetProperties)
             {
                 if (dbSetProperty.CanRead && dbSetProperty.CanWrite)
                 {
@@ -58,10 +63,8 @@ namespace Csorm2.Core
             {
                 Schema.AddEntity(entity.Value);
             }
-            
         }
 
         public abstract Action<DbContextConfiguration> OnConfiguring();
-
     }
 }

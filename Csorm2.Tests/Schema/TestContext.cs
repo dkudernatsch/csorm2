@@ -34,6 +34,9 @@ namespace Csorm2.Tests.Schema
                 () => new NpgsqlConnection("Host=10.10.1.1;Port=54321;User Id=csorm;Password=csorm;Database=csorm"));
 
             var student = ctx.Students.Find(1);
+            student.Id = 2;
+            var changes = ctx.ChangeTracker.CollectChanges();
+            
             
             _testOutputHelper.WriteLine(JsonConvert.SerializeObject(student));
             //_testOutputHelper.WriteLine(JsonConvert.SerializeObject(s2));

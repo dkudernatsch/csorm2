@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace Csorm2.Core.Metadata.Builders
 {
-    public class AttributesFromTypeResolver
+    public static class AttributesFromTypeResolver
     {
 
         public static IEnumerable<PropertyInfo> ValidAttributesFromType(Type t)

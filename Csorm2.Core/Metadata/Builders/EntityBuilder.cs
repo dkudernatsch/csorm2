@@ -9,7 +9,7 @@ namespace Csorm2.Core.Metadata.Builders
     public class EntityBuilder
     {
 
-        private SchemaBuildContext _context;
+        private readonly SchemaBuildContext _context;
 
         public Type ClrType { get; private set; }
         public string EntityName { get; private set; }

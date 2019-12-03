@@ -9,6 +9,7 @@
     <e p="C:\Users\Daniel\Nextcloud\Programming\c#\csorm2\Csorm2.Core" t="IncludeRecursive">
       <e p="Attributes" t="Include">
         <e p="Attr.cs" t="Include" />
+        <e p="AutoIncrement.cs" t="Include" />
         <e p="Column.cs" t="Include" />
         <e p="ManyToMany.cs" t="Include" />
         <e p="ManyToOne.cs" t="Include" />
@@ -22,6 +23,10 @@
       <e p="Cache" t="Include">
         <e p="CachedLazyLoader.cs" t="Include" />
         <e p="CacheEntry.cs" t="Include" />
+        <e p="ChangeTracker" t="Include">
+          <e p="Changes.cs" t="Include" />
+          <e p="ChangeTracker.cs" t="Include" />
+        </e>
         <e p="ILazyLoader.cs" t="Include" />
         <e p="ObjectCache.cs" t="Include" />
         <e p="ObjectProvider.cs" t="Include" />
@@ -75,6 +80,9 @@
         <e p="IQuery.cs" t="Include" />
         <e p="QueryBuilder.cs" t="Include" />
         <e p="Select" t="Include">
+          <e p="EntityFrom.cs" t="Include" />
+          <e p="IFrom.cs" t="Include" />
+          <e p="InnerJoin.cs" t="Include" />
           <e p="SelectQuery.cs" t="Include" />
           <e p="SelectQueryBuilder.cs" t="Include" />
         </e>

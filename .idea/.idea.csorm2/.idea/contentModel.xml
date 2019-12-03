@@ -51,10 +51,15 @@
         <e p="Cache" t="Include">
           <e p="CachedLazyLoader.cs" t="Include" />
           <e p="CacheEntry.cs" t="Include" />
+          <e p="ChangeTracker" t="Include">
+            <e p="Changes.cs" t="Include" />
+            <e p="ChangeTracker.cs" t="Include" />
+          </e>
           <e p="ILazyLoader.cs" t="Include" />
           <e p="ObjectCache.cs" t="Include" />
           <e p="ObjectProvider.cs" t="Include" />
         </e>
+        <e p="ChangeTrackedSet.cs" t="Include" />
         <e p="Csorm2.Core.csproj" t="IncludeRecursive" />
         <e p="DatabaseConnection.cs" t="Include" />
         <e p="DbContext.cs" t="Include" />

@@ -17,7 +17,7 @@ namespace Csorm2.Core.Metadata.Builders
         public string Name { get; private set; }
         private string _databaseName;
         public PropertyInfo PropertyInfo { get; private set; }
-        private bool isAutoInc = false;
+        private bool _isAutoInc = false;
         
         public AttributeBuilder(SchemaBuildContext context, Entity entity)
         {
@@ -76,6 +76,7 @@ namespace Csorm2.Core.Metadata.Builders
                         _clrType = null,
                         _databaseName = primaryKeyAttr,
                         Name = primaryKeyAttr,
+                        _isAutoInc = true,
                     };
                     
                     return null;
@@ -104,7 +105,8 @@ namespace Csorm2.Core.Metadata.Builders
                 _clrType = prop.PropertyType,
                 Name = prop.Name,
                 _databaseName = colName,
-                PropertyInfo = prop
+                PropertyInfo = prop,
+                _isAutoInc = prop.GetCustomAttribute<AutoIncrement>() != null,
             };
         }
 
@@ -113,7 +115,7 @@ namespace Csorm2.Core.Metadata.Builders
             DbType? dbType = null;
             if(_clrType != null) dbType = DbTypeMap.Map(_clrType);
             
-            var attr = new Attribute(_clrType, Name, _databaseName, PropertyInfo, dbType)
+            var attr = new Attribute(_clrType, Name, _databaseName, PropertyInfo, dbType, _isAutoInc)
             {
                 DeclaredIn = Entity
             };
