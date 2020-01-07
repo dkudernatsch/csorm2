@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Csorm2.Core.Metadata;
+using Csorm2.Core.Query.Insert;
 using Csorm2.Core.Query.Select;
 
 namespace Csorm2.Core.Query
@@ -26,6 +27,13 @@ namespace Csorm2.Core.Query
             return queryBuilder
                 .FromTable<TEntity>(entity.EntityName)
                 .Select(entity.Attributes.Values.Where(attr => !attr.IsEntityType).Select(attr => attr.DataBaseColumn));
+        }
+
+        public InsertStatement<TEntity> Insert<TEntity>(TEntity value)
+        {
+            return new InsertQueryBuilder(_ctx)
+                .Insert<TEntity>()
+                .Value(value);
         }
         
     }

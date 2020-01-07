@@ -50,6 +50,11 @@ namespace Csorm2.Core
             
             return _ctx.Connection.Select(query).FirstOrDefault();
         }
+
+        public T Add(T entity)
+        {
+            return _ctx.ChangeTracker.InsertNew(entity);
+        }
         
     }
 }

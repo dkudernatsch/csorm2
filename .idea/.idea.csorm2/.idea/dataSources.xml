@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="postgres@dockerhost" uuid="117a28b7-0177-45d4-a3c6-77d46a89a2e0">
+    <data-source source="LOCAL" name="test_db@localhost" uuid="351c3892-afb4-46e4-8429-ce676840b721">
       <driver-ref>postgresql</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.postgresql.Driver</jdbc-driver>
-      <jdbc-url>jdbc:postgresql://10.10.1.1:54321/csorm</jdbc-url>
+      <jdbc-url>jdbc:postgresql://localhost:5432/test_db</jdbc-url>
     </data-source>
   </component>
 </project>

@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
@@ -16,15 +17,18 @@ namespace Csorm2.Core.Cache
     {
         private readonly Entity _entity;
         private readonly DbContext _context;
+        private readonly CacheEntry _entry;
 
-        public CachedLazyLoader(Entity entity, DbContext context)
+        public CachedLazyLoader(Entity entity, DbContext context, CacheEntry entry)
         {
             _entity = entity;
             _context = context;
+            _entry = entry;
         }
 
         public ICollection<T> Load<T>(object entityObj, ref ICollection<T> loadTo, [CallerMemberName] string name = "")
         {
+            if (_context.ChangeTracker.IsCollectingChanges) return loadTo;
             var propAttr = _entity.Attributes[name];
             var otherEntity = _context.Schema.EntityTypeMap[typeof(T)];
             if (propAttr.Relation is ManyToMany relation)
@@ -46,11 +50,15 @@ namespace Csorm2.Core.Cache
                 ))).Build();
             var loaded = _context.Connection.Select(query).ToList();
             loadTo = loaded;
+            _entry.RelationIdMap[name] =
+                loaded.Select(obj => pkAttr.PropertyInfo.GetMethod.Invoke(obj, new object[]{}))
+                .ToHashSet();
             return loadTo;
         }
 
         public T Load<T>(object entityObj, ref T loadTo, [CallerMemberName] string name = "")
         {
+            if (_context.ChangeTracker.IsCollectingChanges) return loadTo;
             if (loadTo != null) return loadTo;
             var attribute = _entity.Attributes[name];
             var fkAttr = attribute.Relation.FromKeyAttribute;
@@ -75,6 +83,7 @@ namespace Csorm2.Core.Cache
 
             var loaded = _context.Connection.Select(query).First();
             loadTo = loaded;
+            _entry.OriginalEntity[name] = loaded;
             return loaded;
         }
 
@@ -113,6 +122,8 @@ namespace Csorm2.Core.Cache
 
             var loaded = _context.Connection.Select(query).ToList();
             loadTo = loaded;
+            _entry.RelationIdMap[propertyName] = loaded.Select(obj =>
+                otherEntity.PrimaryKeyAttribute.PropertyInfo.GetMethod.Invoke(obj, new object[] { })).ToHashSet();
             return loaded;
         }
     }

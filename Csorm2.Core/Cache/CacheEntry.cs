@@ -12,5 +12,6 @@ namespace Csorm2.Core.Cache
 
         public object EntityObject { get; }
         public Dictionary<string, object> OriginalEntity = new Dictionary<string, object>();
+        public Dictionary<string, ISet<object>> RelationIdMap = new Dictionary<string, ISet<object>>();
     }
 }

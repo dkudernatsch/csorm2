@@ -11,17 +11,17 @@ namespace Csorm2.Core.Cache.ChangeTracker
         public Changes(Entity entity, object obj, object primaryKey)
         {
             Entity = entity;
-            this.obj = obj;
+            this.Obj = obj;
             PrimaryKey = primaryKey;
         }
 
         private Entity Entity { get; set; }
-        private object obj { get; set; }
+        public object Obj { get; set; }
         private object PrimaryKey { get; set; }
-        private ISet<ValueChange> ValueChanges { get; } = new HashSet<ValueChange>();
+        private ISet<IValueChange> ValueChanges { get; } = new HashSet<IValueChange>();
 
 
-        public void AddChange(ValueChange change)
+        public void AddChange(IValueChange change)
         {
             ValueChanges.Add(change);
         }
@@ -31,7 +31,11 @@ namespace Csorm2.Core.Cache.ChangeTracker
             return ValueChanges.Count > 0;
         }
 
-
+        public IEnumerable<IValueChange> ChangesValues()
+        {
+            return ValueChanges;
+        }
+        
         public Changes AddChanges(Changes otherChanges)
         {
             if (this.Entity == otherChanges.Entity
@@ -49,15 +53,26 @@ namespace Csorm2.Core.Cache.ChangeTracker
         }
     }
 
-    public class ValueChange
+
+    public interface IValueChange
     {
-        public ValueChange(Attribute attribute, object oldValue, object newValue)
+        public object OldValue { get; }
+        public object NewValue { get; }
+        public Entity Entity { get; }
+        public Attribute Attribute { get; }
+    }
+    
+    public class ValueChange: IValueChange
+    {
+        public ValueChange(Entity entity, Attribute attribute, object oldValue, object newValue)
         {
+            Entity = entity;
             Attribute = attribute;
             OldValue = oldValue;
             NewValue = newValue;
         }
 
+        public Entity Entity { get; }
         public Attribute Attribute { get; }
         public object OldValue { get; }
         public object NewValue { get; }
@@ -85,6 +100,47 @@ namespace Csorm2.Core.Cache.ChangeTracker
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
             return obj.GetType() == this.GetType() && Equals((ValueChange) obj);
+        }
+    }
+
+    public class DelayedValueChange: IValueChange
+    {
+        private readonly object _oldEntity;
+        private readonly object _newEntity;
+
+        public DelayedValueChange(Entity entity, object oldEntity, object newEntity, Attribute newAttr, Attribute oldAttr)
+        {
+            Entity = entity;
+            _oldEntity = oldEntity;
+            _newEntity = newEntity;
+            NewAttr = newAttr;
+            OldAttr = oldAttr;
+        }
+
+        public Entity Entity { get; }
+        public Attribute NewAttr { get; }
+        public Attribute Attribute => OldAttr;
+        public Attribute OldAttr { get; }
+        public object OldValue => OldAttr.PropertyInfo.GetMethod.Invoke(_oldEntity, new object[] { });
+        public object NewValue => NewAttr.PropertyInfo.GetMethod.Invoke(_newEntity, new object[] { });
+
+
+        protected bool Equals(DelayedValueChange other)
+        {
+            return Equals(_oldEntity, other._oldEntity) && Equals(_newEntity, other._newEntity) && Equals(Entity, other.Entity) && Equals(Attribute, other.Attribute);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((DelayedValueChange) obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(_oldEntity, _newEntity, Entity, Attribute);
         }
     }
 }

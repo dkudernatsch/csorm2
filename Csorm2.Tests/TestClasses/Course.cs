@@ -6,7 +6,7 @@ namespace Csorm2.Tests.TestClasses
 {
     public class Course
     {
-        private ILazyLoader Lazy { get; set; }
+        private ILazyLoader Lazy { get; set; } = new LazyLoader();
 
         [PrimaryKey] [Column("Id")] 
         public long CourseId { get; set; }

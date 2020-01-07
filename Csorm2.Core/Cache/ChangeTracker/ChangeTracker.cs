@@ -6,6 +6,8 @@ using System.Linq;
 using System.Net;
 using Csorm2.Core.Extensions;
 using Csorm2.Core.Metadata;
+using Csorm2.Core.Query.Insert;
+using Csorm2.Core.Query.Update;
 using Attribute = Csorm2.Core.Metadata.Attribute;
 
 namespace Csorm2.Core.Cache.ChangeTracker
@@ -13,12 +15,13 @@ namespace Csorm2.Core.Cache.ChangeTracker
     public class ChangeTracker
     {
         private DbContext _context;
-        
+
         private readonly Dictionary<Entity, List<object>> _newEntityCache = new Dictionary<Entity, List<object>>();
-        private readonly Dictionary<Entity, Dictionary<object, Changes>> trackedChanges = new Dictionary<Entity, Dictionary<object, Changes>>();
-        
-        
-        
+
+        private readonly Dictionary<Entity,Changes> trackedChanges = new Dictionary<Entity, Changes>();
+
+        public Boolean IsCollectingChanges { get; private set; } = false;
+
         public ChangeTracker(DbContext context)
         {
             _context = context;
@@ -26,6 +29,7 @@ namespace Csorm2.Core.Cache.ChangeTracker
 
         public Dictionary<Entity, IEnumerable<Changes>> CollectChanges()
         {
+            IsCollectingChanges = true;
             var dict = new Dictionary<Entity, IEnumerable<Changes>>();
             // for each entity type
             foreach (var (entity, entities) in _context.Cache.ObjectPool)
@@ -40,56 +44,124 @@ namespace Csorm2.Core.Cache.ChangeTracker
                 var changes = entities
                     .FilterSelect(entry => ChangesFor(entity, entry.Key, entry.Value, valueAttributes))
                     .ToList();
-                
-                if (changes.Count > 0) 
+
+                if (changes.Count > 0)
                     dict[entity] = changes;
-                
             }
+
             return dict;
         }
 
-        private Changes ChangesFor(Entity entity, object primaryKey, CacheEntry entry, IEnumerable<Attribute> extractChangesFor)
+        private Changes ChangesFor(Entity entity, object primaryKey, CacheEntry entry,
+            IEnumerable<Attribute> extractChangesFor)
         {
-            
-            var changes = new Changes(entity, primaryKey, entry);
-            
-            var valueChanges = extractChangesFor.FilterSelect(attr => ExtractChanges(entity, attr, entry));
-                    
+            var changes = new Changes(entity, entry.EntityObject, primaryKey);
+
+            var valueChanges = extractChangesFor.SelectMany(attr => ExtractChanges(entity, attr, entry));
+
             foreach (var change in valueChanges)
             {
-                changes.AddChange(change);
+                if(change != null) changes.AddChange(change);
             }
 
             return changes.HasChanges() ? changes : null;
-            
-        }
-        
-        private ValueChange ExtractChanges(Entity e, Attribute attr, CacheEntry entry)
-        {
-            return attr.Relation == null ? 
-                SimpleChanges(e, attr, entry) : 
-                RelationChanges(e, attr, entry);
         }
 
-        private ValueChange RelationChanges(Entity e, Attribute attr, CacheEntry entry)
+        private IEnumerable<IValueChange> ExtractChanges(Entity e, Attribute attr, CacheEntry entry)
         {
-            var newRelationValue = attr.PropertyInfo.GetGetMethod().Invoke(entry.EntityObject, new object[] { });
-            if (newRelationValue == null) return null;
-            
-            
+            return attr.Relation == null
+                ? (IEnumerable<IValueChange>) new[] {SimpleChanges(e, attr, entry)}
+                : RelationChanges(e, attr, entry);
         }
-        
-        private static ValueChange SimpleChanges(Entity e, Attribute attr, CacheEntry entry)
+
+        private List<IValueChange> RelationChanges(Entity e, Attribute attr, CacheEntry entry)
+        {
+            var oldFkVal = entry.OriginalEntity[attr.Relation.FromKeyAttribute.Name];
+            var newRelationValue = attr.PropertyInfo.GetGetMethod().Invoke(entry.EntityObject, new object[] { });
+            var oldRelationValue = entry.OriginalEntity.GetValueOrDefault(attr.Name);
+
+            //was not loaded and user did not add something
+            if (newRelationValue == null && oldRelationValue == null) return new List<IValueChange>();
+
+            var newFkVal = newRelationValue != null
+                ? attr.Relation.ToEntity.PrimaryKeyAttribute.PropertyInfo.GetMethod.Invoke(newRelationValue,
+                    new object[] { })
+                : null;
+
+            //relation delete
+            if (newRelationValue == null)
+            {
+                return new List<IValueChange> {new ValueChange(e, attr.Relation.FromKeyAttribute, oldFkVal, null)};
+            }
+
+            //relation changed/or added
+            if (!Equals(oldFkVal, newFkVal))
+            {
+                var newEntity = _context.Cache.ObjectPool[attr.Relation.ToEntity].GetValueOrDefault(newFkVal);
+                if (newEntity == null)
+                {
+                    _newEntityCache.GetOrInsert(attr.Relation.ToEntity, new List<object>()).Add(newRelationValue);
+                    return new List<IValueChange>
+                    {
+                        new DelayedValueChange(e, oldRelationValue, newRelationValue,
+                            attr.Relation.ToEntity.PrimaryKeyAttribute, attr.Relation.FromKeyAttribute)
+                    };
+                }
+
+                return new List<IValueChange> {new ValueChange(e, attr.Relation.FromKeyAttribute, oldFkVal, newFkVal)};
+            }
+            throw new NotSupportedException($"Relationstate change of Entity {e.EntityName} not supported");
+        }
+
+        private static IValueChange SimpleChanges(Entity e, Attribute attr, CacheEntry entry)
         {
             var newVal = attr.PropertyInfo.GetGetMethod().Invoke(entry.EntityObject, new object[] { });
             var oldVal = entry.OriginalEntity[attr.Name];
-            if (newVal == oldVal) return null; // no changes
+            if (Equals(oldVal, newVal)) return null; // no changes
 
             if (e.PrimaryKeyAttribute.Name == attr.Name)
                 throw new ArgumentException(
                     "Primary key updates are not supported consider deleting the entity and inserting a new one");
 
-            return new ValueChange(attr, oldVal, newVal);
+            return new ValueChange(e, attr, oldVal, newVal);
         }
+
+        public T InsertNew<T>(T t)
+        {
+            var entity = _context.Schema.EntityTypeMap[typeof(T)];
+            _newEntityCache.GetOrInsert(entity, new List<object>()).Add(t);
+            return t;
+        }
+        
+        public void SaveChanges()
+        {
+            var changes = CollectChanges();
+            var newEntities = _newEntityCache;
+
+
+
+            var asInserts
+                = newEntities.SelectMany(kv =>
+                    kv.Value.Select(obj => new InsertQueryBuilder(_context).Insert(kv.Key).Value(obj)));
+
+            var updates = changes.SelectMany(cs =>
+                cs.Value.Select(c =>
+                    new UpdateBuilder(_context).Update(cs.Key).SetValues(c.Obj, c.ChangesValues())));
+
+
+            foreach (var insert in asInserts)
+            {
+                _context.Connection.Insert(insert);
+            }
+            
+            foreach (var update in updates)
+            {
+                _context.Connection.Update(update);
+            }
+            _newEntityCache.Clear();
+            
+        }
+        
+        
     }
 }

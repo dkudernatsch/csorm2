@@ -6,11 +6,12 @@ namespace Csorm2.Tests.TestClasses
 {
     public class Student
     {
-        private ILazyLoader Lazy { get; set; }
+        private ILazyLoader Lazy { get; set; } = new LazyLoader();
 
         public Student(){}
         [PrimaryKey]
-        public int Id { get; set; }
+        [AutoIncrement]
+        public long Id { get; set; }
         public string Name { get; set; }
 
         private ICollection<Grade> _grades;
