@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net;
 using Csorm2.Core.Extensions;
 using Csorm2.Core.Metadata;
+using Csorm2.Core.Query.Delete;
 using Csorm2.Core.Query.Insert;
 using Csorm2.Core.Query.Update;
 using Attribute = Csorm2.Core.Metadata.Attribute;
@@ -16,7 +17,8 @@ namespace Csorm2.Core.Cache.ChangeTracker
     {
         private DbContext _context;
 
-        private readonly Dictionary<Entity, List<object>> _newEntityCache = new Dictionary<Entity, List<object>>();
+        private readonly Dictionary<Entity, HashSet<object>> _newEntityCache = new Dictionary<Entity, HashSet<object>>();
+        private readonly Dictionary<Entity, HashSet<object>> _deleteEntityCache = new Dictionary<Entity, HashSet<object>>();
 
         private readonly Dictionary<Entity,Changes> trackedChanges = new Dictionary<Entity, Changes>();
 
@@ -100,7 +102,7 @@ namespace Csorm2.Core.Cache.ChangeTracker
                 var newEntity = _context.Cache.ObjectPool[attr.Relation.ToEntity].GetValueOrDefault(newFkVal);
                 if (newEntity == null)
                 {
-                    _newEntityCache.GetOrInsert(attr.Relation.ToEntity, new List<object>()).Add(newRelationValue);
+                    _newEntityCache.GetOrInsert(attr.Relation.ToEntity, new HashSet<object>()).Add(newRelationValue);
                     return new List<IValueChange>
                     {
                         new DelayedValueChange(e, oldRelationValue, newRelationValue,
@@ -129,14 +131,22 @@ namespace Csorm2.Core.Cache.ChangeTracker
         public T InsertNew<T>(T t)
         {
             var entity = _context.Schema.EntityTypeMap[typeof(T)];
-            _newEntityCache.GetOrInsert(entity, new List<object>()).Add(t);
+            _newEntityCache.GetOrInsert(entity, new HashSet<object>()).Add(t);
             return t;
         }
-        
+
+        public T Delete<T>(T t)
+        {
+            var entity = _context.Schema.EntityTypeMap[typeof(T)];
+            _deleteEntityCache.GetOrInsert(entity, new HashSet<object>()).Add(t);
+            return t;
+        }
+
         public void SaveChanges()
         {
             var changes = CollectChanges();
             var newEntities = _newEntityCache;
+            var deleteEntities = _deleteEntityCache;
 
 
 
@@ -148,20 +158,25 @@ namespace Csorm2.Core.Cache.ChangeTracker
                 cs.Value.Select(c =>
                     new UpdateBuilder(_context).Update(cs.Key).SetValues(c.Obj, c.ChangesValues())));
 
+            var deletes = _deleteEntityCache.SelectMany(kv =>
+                kv.Value.Select(obj => new DeleteQueryBuilder(_context).Delete(obj, kv.Key)));
+
 
             foreach (var insert in asInserts)
             {
                 _context.Connection.Insert(insert);
             }
-            
+
+
+
             foreach (var update in updates)
             {
                 _context.Connection.Update(update);
             }
             _newEntityCache.Clear();
-            
+
         }
-        
-        
+
+
     }
 }

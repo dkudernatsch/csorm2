@@ -35,7 +35,7 @@ namespace Csorm2.Core.Cache.ChangeTracker
         {
             return ValueChanges;
         }
-        
+
         public Changes AddChanges(Changes otherChanges)
         {
             if (this.Entity == otherChanges.Entity
@@ -56,12 +56,12 @@ namespace Csorm2.Core.Cache.ChangeTracker
 
     public interface IValueChange
     {
-        public object OldValue { get; }
-        public object NewValue { get; }
-        public Entity Entity { get; }
-        public Attribute Attribute { get; }
+        object OldValue { get; }
+        object NewValue { get; }
+        Entity Entity { get; }
+        Attribute Attribute { get; }
     }
-    
+
     public class ValueChange: IValueChange
     {
         public ValueChange(Entity entity, Attribute attribute, object oldValue, object newValue)

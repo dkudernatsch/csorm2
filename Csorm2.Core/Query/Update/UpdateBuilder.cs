@@ -59,7 +59,7 @@ namespace Csorm2.Core.Query.Update
         private IEnumerable<Attribute> _returningAttributes;
 
         private WhereSqlFragment _whereClause;
-        
+
         public UpdateStatement(DbContext context, Entity entity, TEntity obj, IEnumerable<IValueChange> changes)
         {
             _object = obj;
@@ -92,10 +92,10 @@ namespace Csorm2.Core.Query.Update
 
         public IEnumerable<(DbType, string, object)> GetParameters()
         {
-            return _changes.Select((c, i) =>
+            return _changes.Select((c) =>
             {
                 Debug.Assert(c.Attribute.DatabaseType != null, "c.Attribute.DatabaseType != null");
-                return (c.Attribute.DatabaseType.Value, c.Attribute.DataBaseColumn + i, c.NewValue);
+                return (c.Attribute.DatabaseType.Value, c.Attribute.DataBaseColumn + '0', c.NewValue);
             }).Concat(_whereClause.GetParameters());
         }
 

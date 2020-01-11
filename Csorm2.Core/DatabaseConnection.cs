@@ -14,7 +14,7 @@ namespace Csorm2.Core
     {
         private readonly DbContext _ctx;
         private readonly Func<IDbConnection> _connProvider;
-        
+
         public DatabaseConnection(DbContext ctx, Func<IDbConnection> connProvider)
         {
             _ctx = ctx;
@@ -38,14 +38,14 @@ namespace Csorm2.Core
             }
 
             using var reader = cmd.ExecuteReader();
-            
+
             while (reader.Read())
             {
                 var entity = _ctx.Schema.EntityTypeMap[typeof(TEntity)];
                 var pkAttr = entity.PrimaryKeyAttribute;
-                
+
                 var pk = reader[pkAttr.DataBaseColumn];
-                
+
                 var entry = cache.GetOrInsert(entity, pk, ObjectProvider.Construct(entity.ClrType));
 
                 foreach (var (attrName, attr) in entity.Attributes)
@@ -88,14 +88,14 @@ namespace Csorm2.Core
                 param.ParameterName = id;
                 cmd.Parameters.Add(param);
             }
-            using var reader = cmd.ExecuteReader(); 
+            using var reader = cmd.ExecuteReader();
             using var returnValuePos = stmt.ReturnValuePositions.GetEnumerator();
             var objectList = new List<TEntity>();
             while (reader.Read() && returnValuePos.MoveNext())
             {
                 var valuesForEntity = returnValuePos.Current;
                 if(valuesForEntity == null) break;
-                
+
                 foreach (var (attr, obj) in valuesForEntity)
                 {
                     var val = reader[attr.DataBaseColumn];
@@ -103,7 +103,7 @@ namespace Csorm2.Core
                     objectList.Add(obj);
                 }
             }
-            
+
             foreach (var obj in objectList)
             {
                 var entity = stmt.Entity;
@@ -133,12 +133,12 @@ namespace Csorm2.Core
             {
                 var returns = returnValuePos.Current;
                 if(returns == null) break;
-                
+
                 var entity = stmt.Entity;
                 var newPk = reader[entity.PrimaryKeyAttribute.DataBaseColumn];
-                var cacheEntry = _ctx.Cache.ObjectPool[entity].GetValueOrDefault(newPk) 
+                var cacheEntry = _ctx.Cache.ObjectPool[entity].GetValueOrDefault(newPk)
                                  ?? throw new Exception("Entity to update not found in local cache; Only managed entities can be updated");
-                
+
                 foreach (var (attr, obj) in returns)
                 {
                     if (attr.IsEntityType) continue;
@@ -151,5 +151,24 @@ namespace Csorm2.Core
                 }
             }
         }
+
+        public void Delete<TEntity>(IStatement<TEntity> stmt)
+        {
+            using var conn = _connProvider.Invoke();
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = stmt.AsSqlString();
+            foreach (var (type, id, value) in stmt.GetParameters())
+            {
+                var param = cmd.CreateParameter();
+                param.Value = value;
+                param.DbType = type;
+                param.ParameterName = id;
+                cmd.Parameters.Add(param);
+            }
+            using var reader = cmd.ExecuteReader();
+
+        }
+
     }
 }

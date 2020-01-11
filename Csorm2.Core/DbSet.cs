@@ -20,7 +20,7 @@ namespace Csorm2.Core
                 .Select<T>().Build();
             return _ctx.Connection.Select(query);
         }
-        
+
         public IEnumerable<T> Where(WhereSqlFragment where)
         {
             var query = new QueryBuilder(_ctx)
@@ -42,12 +42,12 @@ namespace Csorm2.Core
                         PropertyName = pkAttr.DataBaseColumn,
                         TableName = entity.TableName
                     }, Value.FromAttr(primaryKey, pkAttr)));
-            
+
             var query = new QueryBuilder(_ctx)
                 .Select<T>()
                 .Where(filter)
                 .Build();
-            
+
             return _ctx.Connection.Select(query).FirstOrDefault();
         }
 
@@ -55,6 +55,11 @@ namespace Csorm2.Core
         {
             return _ctx.ChangeTracker.InsertNew(entity);
         }
-        
+
+        public void Remove(T entity)
+        {
+            _ctx.ChangeTracker.Delete(entity);
+        }
+
     }
 }

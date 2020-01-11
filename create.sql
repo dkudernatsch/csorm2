@@ -23,7 +23,7 @@ create table relcoursestudent(
     fk_student bigint REFERENCES Student(Id)
 );
 
-insert into Student(Name) VALUES 
+insert into Student(Name) VALUES
 ('Daniel Kudernatsch'),
 ('Viktor Leher');
 
@@ -41,3 +41,4 @@ INSERT INTO public.grade (id, gradevalue, fk_grade_student) VALUES (5, 3, 2);
 INSERT INTO public.relcoursestudent (fk_course, fk_student) VALUES ( 1, 1);
 INSERT INTO public.relcoursestudent (fk_course, fk_student) VALUES ( 2, 1);
 INSERT INTO public.relcoursestudent (fk_course, fk_student) VALUES ( 2, 2);
+
