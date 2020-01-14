@@ -21,8 +21,10 @@ namespace Csorm2.Core.Cache.ChangeTracker
         private readonly Dictionary<Entity, HashSet<object>> _deleteEntityCache = new Dictionary<Entity, HashSet<object>>();
 
         private readonly Dictionary<Entity,Changes> trackedChanges = new Dictionary<Entity, Changes>();
-
-        public Boolean IsCollectingChanges { get; private set; } = false;
+        
+        public int Generation { get; private set; } = 0;
+        
+        public bool IsCollectingChanges { get; private set; } = false;
 
         public ChangeTracker(DbContext context)
         {
@@ -50,7 +52,9 @@ namespace Csorm2.Core.Cache.ChangeTracker
                 if (changes.Count > 0)
                     dict[entity] = changes;
             }
+            // changes from deletetion
 
+            IsCollectingChanges = false;
             return dict;
         }
 
@@ -112,6 +116,13 @@ namespace Csorm2.Core.Cache.ChangeTracker
 
                 return new List<IValueChange> {new ValueChange(e, attr.Relation.FromKeyAttribute, oldFkVal, newFkVal)};
             }
+            
+            //was normally loaded and no changes were made
+            if (Equals(oldFkVal, newFkVal))
+            {
+                return new List<IValueChange>();
+            }
+            
             throw new NotSupportedException($"Relationstate change of Entity {e.EntityName} not supported");
         }
 
@@ -147,9 +158,7 @@ namespace Csorm2.Core.Cache.ChangeTracker
             var changes = CollectChanges();
             var newEntities = _newEntityCache;
             var deleteEntities = _deleteEntityCache;
-
-
-
+            
             var asInserts
                 = newEntities.SelectMany(kv =>
                     kv.Value.Select(obj => new InsertQueryBuilder(_context).Insert(kv.Key).Value(obj)));
@@ -158,23 +167,30 @@ namespace Csorm2.Core.Cache.ChangeTracker
                 cs.Value.Select(c =>
                     new UpdateBuilder(_context).Update(cs.Key).SetValues(c.Obj, c.ChangesValues())));
 
-            var deletes = _deleteEntityCache.SelectMany(kv =>
+            var deletes = deleteEntities.SelectMany(kv =>
                 kv.Value.Select(obj => new DeleteQueryBuilder(_context).Delete(obj, kv.Key)));
 
+            using var conn = _context.Connection;
+            conn.BeginTransaction();
 
             foreach (var insert in asInserts)
             {
                 _context.Connection.Insert(insert);
             }
-
-
-
+            
             foreach (var update in updates)
             {
                 _context.Connection.Update(update);
             }
-            _newEntityCache.Clear();
 
+            foreach (var delete in deletes)
+            {
+                _context.Connection.Delete(delete);
+            }
+            conn.Commit();
+            Generation++;
+            _newEntityCache.Clear();
+            _deleteEntityCache.Clear();
         }
 
 

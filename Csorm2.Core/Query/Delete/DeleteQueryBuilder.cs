@@ -52,7 +52,7 @@ namespace Csorm2.Core.Query.Delete
         public string AsSqlString()
         {
             var del = $"DELETE FROM {Entity.TableName} ";
-            return $"{del} {_where.AsSqlString()}";
+            return $"{del} WHERE {_where.AsSqlString()}";
         }
 
         public IEnumerable<(DbType, string, object)> GetParameters()

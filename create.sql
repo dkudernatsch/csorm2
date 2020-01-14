@@ -1,3 +1,8 @@
+drop table if exists Course CASCADE ;
+drop table if exists Grade CASCADE ;
+drop table if exists relcoursestudent cascade ;
+drop table if exists Student CASCADE ;
+
 create table Course(
     Id bigint primary key,
     Name Text,

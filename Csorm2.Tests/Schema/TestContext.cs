@@ -39,19 +39,29 @@ namespace Csorm2.Tests.Schema
 
             var grade1 = ctx.Grades.Find(1L);
             var grade2 = ctx.Grades.Find(2L);
+            var grade3 = ctx.Grades.Find(3L);
             
             var student1 = ctx.Students.Find(1L);
             var student2 = ctx.Students.Find(2L);
 
             var newGrade = ctx.Grades.Add(new Grade {Id = 10, GradeValue = 50, Student = student1});
-            
+
+            var course = ctx.Courses.Find(1L);
+                        
             grade1.Student = newStudent1;
-            
-            grade2.Student = student2;
+
+            grade2.Student = grade3.Student;
             grade2.GradeValue = 5;
 
+            
             ctx.ChangeTracker.SaveChanges();
-
+            
+            //grade3.Student = newStudent2;
+            
+            //student2.Grades.Add(grade3);
+            //_testOutputHelper.WriteLine(JsonConvert.SerializeObject(course.Students));
+            
+            ctx.ChangeTracker.SaveChanges();
 
             _testOutputHelper.WriteLine(JsonConvert.SerializeObject(student1));
             _testOutputHelper.WriteLine(JsonConvert.SerializeObject(student2));

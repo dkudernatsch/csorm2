@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Numerics;
 using System.Reflection;
 using Csorm2.Core.Attributes;
 using Csorm2.Core.Extensions;
@@ -18,6 +19,7 @@ namespace Csorm2.Core.Metadata.Builders
         private string _databaseName;
         public PropertyInfo PropertyInfo { get; private set; }
         private bool _isAutoInc = false;
+        public DbType? DbType { get; private set; }
         
         public AttributeBuilder(SchemaBuildContext context, Entity entity)
         {
@@ -53,13 +55,14 @@ namespace Csorm2.Core.Metadata.Builders
                     const string primaryKeyAttr = "Id";
                     var toThisEntity = relation.OtherEntityOtherKey;
                     var toOtherEntity = relation.OtherKey;
-                    
+
                     _context.AttributeBuilders
                         .GetOrInsert(tableEntity, new Dictionary<string, AttributeBuilder>())[toThisEntity] = new AttributeBuilder(_context, _context.Entities[tableEntity])
                     {
                         _clrType = null,
                         _databaseName = toThisEntity,
                         Name = toThisEntity,
+                        DbType = System.Data.DbType.Int64
                     };
                     
                     _context.AttributeBuilders
@@ -68,6 +71,7 @@ namespace Csorm2.Core.Metadata.Builders
                         _clrType = null,
                         _databaseName = toOtherEntity,
                         Name = toOtherEntity,
+                        DbType = System.Data.DbType.Int64
                     };
                     
                     _context.AttributeBuilders
@@ -77,6 +81,7 @@ namespace Csorm2.Core.Metadata.Builders
                         _databaseName = primaryKeyAttr,
                         Name = primaryKeyAttr,
                         _isAutoInc = true,
+                        DbType = System.Data.DbType.Int64
                     };
                     
                     return null;
@@ -112,10 +117,12 @@ namespace Csorm2.Core.Metadata.Builders
 
         public void Build()
         {
-            DbType? dbType = null;
-            if(_clrType != null) dbType = DbTypeMap.Map(_clrType);
-            
-            var attr = new Attribute(_clrType, Name, _databaseName, PropertyInfo, dbType, _isAutoInc)
+            if (DbType == null && _clrType != null)
+            {
+                DbType = DbTypeMap.Map(_clrType);
+            }
+
+            var attr = new Attribute(_clrType, Name, _databaseName, PropertyInfo, DbType, _isAutoInc)
             {
                 DeclaredIn = Entity
             };

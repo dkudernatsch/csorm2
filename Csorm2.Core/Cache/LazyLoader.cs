@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace Csorm2.Core.Cache
 {
@@ -7,12 +8,12 @@ namespace Csorm2.Core.Cache
     {
         internal ILazyLoader Internal {  get; set; }
 
-        public ICollection<T> Load<T>(object entityObj, ref ICollection<T> loadTo, string name = "")
+        public ICollection<T> Load<T>(object entityObj, ref ICollection<T> loadTo, [CallerMemberName] string name = "")
         {
             return Internal?.Load(entityObj, ref loadTo, name) ?? loadTo;
         }
 
-        public T Load<T>(object entityObj, ref T loadTo, string name = "")
+        public T Load<T>(object entityObj, ref T loadTo, [CallerMemberName] string name = "")
         {
             return Internal == null 
                 ? loadTo 

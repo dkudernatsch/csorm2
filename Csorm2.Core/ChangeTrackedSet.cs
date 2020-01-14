@@ -1,46 +1,77 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Csorm2.Core.Attributes;
 using Csorm2.Core.Cache.ChangeTracker;
+using Csorm2.Core.Metadata;
+using ManyToMany = Csorm2.Core.Metadata.ManyToMany;
 
 namespace Csorm2.Core
 {
     public class ChangeTrackedSet<TEntity>: ICollection<TEntity>
     {
 
-        private readonly ChangeTracker _tracker;
-        private readonly HashSet<TEntity> _inner = new HashSet<TEntity>();
-
-        public ChangeTrackedSet(ChangeTracker changeTracker)
+        private readonly DbContext _context;
+        private readonly ICollection<TEntity> _inner = new HashSet<TEntity>();
+        private readonly IRelation _relation;
+        
+        private Entity Entity => _context.Schema.EntityTypeMap[typeof(TEntity)];
+        
+        public ChangeTrackedSet(DbContext context, IRelation relation)
         {
-            _tracker = changeTracker;
+            _context = context;
+            _relation = relation;
         }
         
         public bool Remove(TEntity item)
         {
-            throw new System.NotImplementedException();
+            if (!Contains(item)) return false;
+            if(_relation is ManyToMany) throw new Exception("Updating ManyToMany Relations is not supported");
+
+            var pk = Entity.PrimaryKeyAttribute.PropertyInfo.GetMethod.Invoke(item, new object[0]);
+            var fkAttr = _relation.ToKeyAttribute;
+            var entry = _context.Cache.ObjectPool[Entity][pk];
+            
+            _relation.ToEntityAttribute?.PropertyInfo.SetMethod.Invoke(item, new object[] {null});
+            
+
+            return _inner.Remove(item);
         }
 
         public void Add(TEntity item)
         {
-            throw new System.NotImplementedException();
+            
+            _inner.Add(item);
         }
 
         public void Clear()
         {
-            throw new System.NotImplementedException();
+            
+            _inner.Clear();
         }
         
-        #region MyRegion
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
         }
-        public IEnumerator<TEntity> GetEnumerator() => _inner.GetEnumerator();
-        public bool Contains(TEntity item) => _inner.Contains(item);
-        public void CopyTo(TEntity[] array, int arrayIndex) => _inner.CopyTo(array, arrayIndex);
+
+        public IEnumerator<TEntity> GetEnumerator()
+        {
+            return _inner.GetEnumerator();
+        }
+
+        public bool Contains(TEntity item)
+        {
+            return _inner.Contains(item);
+        }
+
+        public void CopyTo(TEntity[] array, int arrayIndex)
+        {
+            _inner.CopyTo(array, arrayIndex);
+        }
+
         public int Count => _inner.Count;
-        public bool IsReadOnly => false;
-        #endregion
+        public bool IsReadOnly => _inner.IsReadOnly;
     }
 }

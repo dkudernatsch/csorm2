@@ -7,7 +7,7 @@ namespace Csorm2.Tests.TestClasses
 {
     public class TestContext: DbContext
     {
-        public TestContext(Func<IDbConnection> connection) : base(connection)
+        public TestContext(Func<IDbConnection> connection, bool createDb = false) : base(connection, createDb)
         {
         }
 

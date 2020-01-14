@@ -103,10 +103,10 @@ namespace Csorm2.Core.Query.Insert
                 
                 var otherEntity = relation.ToEntity;
                 var otherObj = relation.FromEntityAttribute.PropertyInfo.GetMethod.Invoke(obj, new object[0]);
-                var otherPk =
+                var otherPk = otherObj == null ? null :
                     otherEntity.PrimaryKeyAttribute.PropertyInfo.GetMethod.Invoke(otherObj, new object[0]);
                 
-                if (otherPk == null || _context.Cache.ObjectPool[otherEntity].GetValueOrDefault(otherPk) == null)
+                if (otherObj != null && (otherPk == null || _context.Cache.ObjectPool[otherEntity].GetValueOrDefault(otherPk) == null))
                 {
                     throw new Exception("Trying to insert entity with unmanaged object relation value");
                 }

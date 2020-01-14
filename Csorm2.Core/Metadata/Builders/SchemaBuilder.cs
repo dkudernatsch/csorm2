@@ -60,9 +60,8 @@ namespace Csorm2.Core.Metadata.Builders
                     Context.AttributeBuilders.GetOrInsert(key,
                         new Dictionary<string, AttributeBuilder>())[attributeBuilder.Name] = attributeBuilder;
                 }
-                
             }
-            
+
             var attributesFromRelations = Context.AttributeBuilders.ToDictionary(kv => kv.Key, kv => kv.Value)
                 .SelectMany(tup => tup.Value.Values.Select(vals => (Entity: tup.Key, Attribute: vals)))
                 .Select(tup =>
@@ -80,10 +79,10 @@ namespace Csorm2.Core.Metadata.Builders
             {
                 foreach (var (_, attributeBuilder) in value)
                 {
-                    Context.AttributeBuilders.GetOrInsert(key,
-                        new Dictionary<string, AttributeBuilder>())[attributeBuilder.Name] = attributeBuilder;
+                    var dict = Context.AttributeBuilders.GetOrInsert(key,
+                        new Dictionary<string, AttributeBuilder>());
+                    if(dict.GetValueOrDefault(attributeBuilder.Name) == null) dict[attributeBuilder.Name] = attributeBuilder;
                 }
-                
             }
         }
 
@@ -133,7 +132,7 @@ namespace Csorm2.Core.Metadata.Builders
             foreach (var (entityName, entity) in Context.Entities)
             {
                 entity.Attributes = new ReadOnlyDictionary<string, Attribute>(
-                    Context.Attributes[entityName]   
+                    Context.Attributes[entityName]
                 );
             }
         }

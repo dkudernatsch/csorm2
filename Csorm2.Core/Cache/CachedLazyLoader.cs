@@ -5,6 +5,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
+using Csorm2.Core.Extensions;
 using Csorm2.Core.Metadata;
 using Csorm2.Core.Query;
 using Csorm2.Core.Query.Expression;
@@ -18,6 +19,7 @@ namespace Csorm2.Core.Cache
         private readonly Entity _entity;
         private readonly DbContext _context;
         private readonly CacheEntry _entry;
+        private Dictionary<string, int> _attributeGenerations = new Dictionary<string, int>();
 
         public CachedLazyLoader(Entity entity, DbContext context, CacheEntry entry)
         {
@@ -28,20 +30,19 @@ namespace Csorm2.Core.Cache
 
         public ICollection<T> Load<T>(object entityObj, ref ICollection<T> loadTo, [CallerMemberName] string name = "")
         {
-            if (_context.ChangeTracker.IsCollectingChanges) return loadTo;
+            if (!ShouldLoad(loadTo, name)) return loadTo;
+            
             var propAttr = _entity.Attributes[name];
             var otherEntity = _context.Schema.EntityTypeMap[typeof(T)];
             if (propAttr.Relation is ManyToMany relation)
             {
                 return LoadManyToMany(entityObj, ref loadTo, name, relation);
             }
-
-            if (loadTo != null) return loadTo;
             var attribute = _entity.Attributes[name];
             var fkAttr = attribute.Relation.ToKeyAttribute;
             var pkAttr = attribute.Relation.FromKeyAttribute;
             var pk = pkAttr.PropertyInfo.GetMethod.Invoke(entityObj, new object[] { });
-
+            var otherPk = attribute.Relation.ToEntity.PrimaryKeyAttribute;
             var query = new QueryBuilder(_context)
                 .Select<T>()
                 .Where(new WhereSqlFragment(BinaryExpression.Eq(
@@ -51,15 +52,17 @@ namespace Csorm2.Core.Cache
             var loaded = _context.Connection.Select(query).ToList();
             loadTo = loaded;
             _entry.RelationIdMap[name] =
-                loaded.Select(obj => pkAttr.PropertyInfo.GetMethod.Invoke(obj, new object[]{}))
+                loaded.Select(obj => otherPk.PropertyInfo.GetMethod.Invoke(obj, new object[]{}))
                 .ToHashSet();
+            
+            
             return loadTo;
         }
 
         public T Load<T>(object entityObj, ref T loadTo, [CallerMemberName] string name = "")
         {
-            if (_context.ChangeTracker.IsCollectingChanges) return loadTo;
-            if (loadTo != null) return loadTo;
+            if (!ShouldLoad(loadTo, name)) return loadTo;
+            
             var attribute = _entity.Attributes[name];
             var fkAttr = attribute.Relation.FromKeyAttribute;
             var pk = _entity.PrimaryKeyAttribute.PropertyInfo.GetMethod.Invoke(entityObj, new object[] { });
@@ -84,6 +87,7 @@ namespace Csorm2.Core.Cache
             var loaded = _context.Connection.Select(query).First();
             loadTo = loaded;
             _entry.OriginalEntity[name] = loaded;
+            _attributeGenerations[name] = _context.ChangeTracker.Generation;
             return loaded;
         }
 
@@ -126,5 +130,18 @@ namespace Csorm2.Core.Cache
                 otherEntity.PrimaryKeyAttribute.PropertyInfo.GetMethod.Invoke(obj, new object[] { })).ToHashSet();
             return loaded;
         }
+
+        private bool ShouldLoad<T>(T loadTo, string name)
+        {
+            // most important otherwise change tracking doesnt work
+            if (_context.ChangeTracker.IsCollectingChanges) return false;
+            // if its null always load
+            if (loadTo == null) return true;
+            // data may be stale -> reload
+            if (_attributeGenerations.GetOrInsert(name, -1) < _context.ChangeTracker.Generation) return true;
+            //otherwise dont load
+            return false;
+        }
+        
     }
 }
