@@ -5,6 +5,12 @@ namespace Csorm2.Core
 {
     internal class DbSetProvider
     {
+        /// <summary>
+        /// Generates dynamically generic versions of DbSets
+        /// </summary>
+        /// <param name="t"></param>
+        /// <param name="ctx"></param>
+        /// <returns></returns>
         public static object ProvideDbSet(Type t, DbContext ctx)
         {
             return typeof(DbSetProvider).GetTypeInfo()

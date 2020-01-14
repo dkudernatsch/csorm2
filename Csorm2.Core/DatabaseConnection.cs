@@ -11,6 +11,10 @@ using Csorm2.Core.Query;
 
 namespace Csorm2.Core
 {
+    /// <summary>
+    /// Provides direct communication to the database
+    /// Abstraction over ado net IDbConnection which uses Queries and Statement of this library
+    /// </summary>
     public class DatabaseConnection: IDisposable
     {
         private readonly DbContext _ctx;
@@ -22,7 +26,14 @@ namespace Csorm2.Core
             _ctx = ctx;
             _connection = connection;
         }
-
+        
+        /// <summary>
+        /// Executes the given SelectQuery and returns the result set transformed back into entity objects.
+        /// Adds each returned object to the internal cache as managed entity
+        /// </summary>
+        /// <param name="query"></param>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <returns></returns>
         public IEnumerable<TEntity> Select<TEntity>(IQuery<TEntity> query)
         {
             var conn = _connection;
@@ -83,7 +94,13 @@ namespace Csorm2.Core
                 }
             }
         }
-
+        /// <summary>
+        /// Executes the given InsertStatement and maps returned values back into entities
+        /// objects created like this are add into the cache as managed entities
+        /// </summary>
+        /// <param name="stmt"></param>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <exception cref="Exception"></exception>
         public void Insert<TEntity>(IStatement<TEntity> stmt)
         {
             var conn = _connection;
