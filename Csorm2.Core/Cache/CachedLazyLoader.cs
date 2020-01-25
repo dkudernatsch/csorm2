@@ -31,17 +31,18 @@ namespace Csorm2.Core.Cache
         public ICollection<T> Load<T>(object entityObj, ref ICollection<T> loadTo, [CallerMemberName] string name = "")
         {
             if (!ShouldLoad(loadTo, name)) return loadTo;
-            
+
             var propAttr = _entity.Attributes[name];
             var otherEntity = _context.Schema.EntityTypeMap[typeof(T)];
             if (propAttr.Relation is ManyToMany relation)
             {
                 return LoadManyToMany(entityObj, ref loadTo, name, relation);
             }
+
             var attribute = _entity.Attributes[name];
             var fkAttr = attribute.Relation.ToKeyAttribute;
             var pkAttr = attribute.Relation.FromKeyAttribute;
-            var pk = pkAttr.PropertyInfo.GetMethod.Invoke(entityObj, new object[] { });
+            var pk = pkAttr.InvokeGetter(entityObj);
             var otherPk = attribute.Relation.ToEntity.PrimaryKeyAttribute;
             var query = new QueryBuilder(_context)
                 .Select<T>()
@@ -52,20 +53,20 @@ namespace Csorm2.Core.Cache
             var loaded = _context.Connection.Select(query).ToList();
             loadTo = loaded;
             _entry.RelationIdMap[name] =
-                loaded.Select(obj => otherPk.PropertyInfo.GetMethod.Invoke(obj, new object[]{}))
-                .ToHashSet();
-            
-            
+                loaded.Select(obj => otherPk.InvokeGetter(obj))
+                    .ToHashSet();
+
+
             return loadTo;
         }
 
         public T Load<T>(object entityObj, ref T loadTo, [CallerMemberName] string name = "")
         {
             if (!ShouldLoad(loadTo, name)) return loadTo;
-            
+
             var attribute = _entity.Attributes[name];
             var fkAttr = attribute.Relation.FromKeyAttribute;
-            var pk = _entity.PrimaryKeyAttribute.PropertyInfo.GetMethod.Invoke(entityObj, new object[] { });
+            var pk = _entity.PrimaryKeyAttribute.InvokeGetter(entityObj);
 
             var otherEntity = _context.Schema.EntityTypeMap[typeof(T)];
 
@@ -108,7 +109,7 @@ namespace Csorm2.Core.Cache
             //Students
             var fromEntityAttribute = relation.FromEntityAttribute;
 
-            var pk = relation.FromKeyAttribute.PropertyInfo.GetMethod.Invoke(entityObj, new object[] { });
+            var pk = relation.FromKeyAttribute.InvokeGetter(entityObj);
 
             var query = new SelectQueryBuilder(_context)
                 .FromTable<T>(thisEntity.TableName)
@@ -118,16 +119,17 @@ namespace Csorm2.Core.Cache
                     .Select(attr => attr.DataBaseColumn))
                 .Where(new WhereSqlFragment(
                     BinaryExpression.Eq(new Accessor
-                {
-                    PropertyName = relation.ReferencedFromAttribute.DataBaseColumn, 
-                    TableName = betweenEntity.TableName
-                }, Value.FromAttr(pk, relation.FromKeyAttribute))))
+                    {
+                        PropertyName = relation.ReferencedFromAttribute.DataBaseColumn,
+                        TableName = betweenEntity.TableName
+                    }, Value.FromAttr(pk, relation.FromKeyAttribute))))
                 .Build();
 
             var loaded = _context.Connection.Select(query).ToList();
             loadTo = loaded;
             _entry.RelationIdMap[propertyName] = loaded.Select(obj =>
-                otherEntity.PrimaryKeyAttribute.PropertyInfo.GetMethod.Invoke(obj, new object[] { })).ToHashSet();
+                    otherEntity.PrimaryKeyAttribute.InvokeGetter(obj))
+                .ToHashSet();
             return loaded;
         }
 
@@ -142,6 +144,5 @@ namespace Csorm2.Core.Cache
             //otherwise dont load
             return false;
         }
-        
     }
 }

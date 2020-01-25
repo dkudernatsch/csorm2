@@ -121,8 +121,8 @@ namespace Csorm2.Core.Cache.ChangeTracker
         public Attribute NewAttr { get; }
         public Attribute Attribute => OldAttr;
         public Attribute OldAttr { get; }
-        public object OldValue => OldAttr.PropertyInfo.GetMethod.Invoke(_oldEntity, new object[] { });
-        public object NewValue => NewAttr.PropertyInfo.GetMethod.Invoke(_newEntity, new object[] { });
+        public object OldValue => OldAttr.InvokeGetter(_oldEntity);
+        public object NewValue => NewAttr.InvokeGetter(_newEntity);
 
 
         protected bool Equals(DelayedValueChange other)

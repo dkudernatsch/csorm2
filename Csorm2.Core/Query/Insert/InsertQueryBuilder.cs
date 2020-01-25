@@ -93,7 +93,7 @@ namespace Csorm2.Core.Query.Insert
 
         public IEnumerable<(DbType, string, object)> GetParameters()
         {
-            Func<Attribute, object, object> extractSimpleValue = (attr, obj) => attr.PropertyInfo.GetMethod.Invoke(obj, new object[0]);
+            Func<Attribute, object, object> extractSimpleValue = (attr, obj) => attr.InvokeGetter(obj);
             Func<Attribute, object, object> extractForeignKey = (attr, obj) =>
             {
                 var relation = Entity.Attributes.FirstOrDefault(relattr => relattr.Value?.Relation?.FromKeyAttribute == attr).Value?.Relation;
@@ -102,9 +102,9 @@ namespace Csorm2.Core.Query.Insert
                     throw new Exception("Tried to insert entity attribute that corresponds to other table");
                 
                 var otherEntity = relation.ToEntity;
-                var otherObj = relation.FromEntityAttribute.PropertyInfo.GetMethod.Invoke(obj, new object[0]);
+                var otherObj = relation.FromEntityAttribute.InvokeGetter(obj);
                 var otherPk = otherObj == null ? null :
-                    otherEntity.PrimaryKeyAttribute.PropertyInfo.GetMethod.Invoke(otherObj, new object[0]);
+                    otherEntity.PrimaryKeyAttribute.InvokeGetter(otherObj);
                 
                 if (otherObj != null && (otherPk == null || _context.Cache.ObjectPool[otherEntity].GetValueOrDefault(otherPk) == null))
                 {

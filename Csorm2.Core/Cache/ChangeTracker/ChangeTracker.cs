@@ -17,13 +17,16 @@ namespace Csorm2.Core.Cache.ChangeTracker
     {
         private DbContext _context;
 
-        private readonly Dictionary<Entity, HashSet<object>> _newEntityCache = new Dictionary<Entity, HashSet<object>>();
-        private readonly Dictionary<Entity, HashSet<object>> _deleteEntityCache = new Dictionary<Entity, HashSet<object>>();
+        private readonly Dictionary<Entity, HashSet<object>>
+            _newEntityCache = new Dictionary<Entity, HashSet<object>>();
 
-        private readonly Dictionary<Entity,Changes> trackedChanges = new Dictionary<Entity, Changes>();
-        
+        private readonly Dictionary<Entity, HashSet<object>> _deleteEntityCache =
+            new Dictionary<Entity, HashSet<object>>();
+
+        private readonly Dictionary<Entity, Changes> trackedChanges = new Dictionary<Entity, Changes>();
+
         public int Generation { get; private set; } = 0;
-        
+
         public bool IsCollectingChanges { get; private set; } = false;
 
         public ChangeTracker(DbContext context)
@@ -67,7 +70,7 @@ namespace Csorm2.Core.Cache.ChangeTracker
 
             foreach (var change in valueChanges)
             {
-                if(change != null) changes.AddChange(change);
+                if (change != null) changes.AddChange(change);
             }
 
             return changes.HasChanges() ? changes : null;
@@ -83,15 +86,14 @@ namespace Csorm2.Core.Cache.ChangeTracker
         private List<IValueChange> RelationChanges(Entity e, Attribute attr, CacheEntry entry)
         {
             var oldFkVal = entry.OriginalEntity[attr.Relation.FromKeyAttribute.Name];
-            var newRelationValue = attr.PropertyInfo.GetGetMethod().Invoke(entry.EntityObject, new object[] { });
+            var newRelationValue = attr.InvokeGetter(entry.EntityObject);
             var oldRelationValue = entry.OriginalEntity.GetValueOrDefault(attr.Name);
 
             //was not loaded and user did not add something
             if (newRelationValue == null && oldRelationValue == null) return new List<IValueChange>();
 
             var newFkVal = newRelationValue != null
-                ? attr.Relation.ToEntity.PrimaryKeyAttribute.PropertyInfo.GetMethod.Invoke(newRelationValue,
-                    new object[] { })
+                ? attr.Relation.ToEntity.PrimaryKeyAttribute.InvokeGetter(newRelationValue)
                 : null;
 
             //relation delete
@@ -116,19 +118,19 @@ namespace Csorm2.Core.Cache.ChangeTracker
 
                 return new List<IValueChange> {new ValueChange(e, attr.Relation.FromKeyAttribute, oldFkVal, newFkVal)};
             }
-            
+
             //was normally loaded and no changes were made
             if (Equals(oldFkVal, newFkVal))
             {
                 return new List<IValueChange>();
             }
-            
+
             throw new NotSupportedException($"Relationstate change of Entity {e.EntityName} not supported");
         }
 
         private static IValueChange SimpleChanges(Entity e, Attribute attr, CacheEntry entry)
         {
-            var newVal = attr.PropertyInfo.GetGetMethod().Invoke(entry.EntityObject, new object[] { });
+            var newVal = attr.InvokeGetter(entry.EntityObject);
             var oldVal = entry.OriginalEntity[attr.Name];
             if (Equals(oldVal, newVal)) return null; // no changes
 
@@ -158,7 +160,7 @@ namespace Csorm2.Core.Cache.ChangeTracker
             var changes = CollectChanges();
             var newEntities = _newEntityCache;
             var deleteEntities = _deleteEntityCache;
-            
+
             var asInserts
                 = newEntities.SelectMany(kv =>
                     kv.Value.Select(obj => new InsertQueryBuilder(_context).Insert(kv.Key).Value(obj)));
@@ -177,7 +179,7 @@ namespace Csorm2.Core.Cache.ChangeTracker
             {
                 _context.Connection.Insert(insert);
             }
-            
+
             foreach (var update in updates)
             {
                 _context.Connection.Update(update);
@@ -187,12 +189,11 @@ namespace Csorm2.Core.Cache.ChangeTracker
             {
                 _context.Connection.Delete(delete);
             }
+
             conn.Commit();
             Generation++;
             _newEntityCache.Clear();
             _deleteEntityCache.Clear();
         }
-
-
     }
 }

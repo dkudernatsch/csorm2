@@ -29,13 +29,10 @@ namespace Csorm2.Core
             if (!Contains(item)) return false;
             if(_relation is ManyToMany) throw new Exception("Updating ManyToMany Relations is not supported");
 
-            var pk = Entity.PrimaryKeyAttribute.PropertyInfo.GetMethod.Invoke(item, new object[0]);
+            var pk = Entity.PrimaryKeyAttribute.InvokeGetter(item);
             var fkAttr = _relation.ToKeyAttribute;
             var entry = _context.Cache.ObjectPool[Entity][pk];
-            
-            _relation.ToEntityAttribute?.PropertyInfo.SetMethod.Invoke(item, new object[] {null});
-            
-
+            _relation.ToEntityAttribute?.InvokeSetter(item, null);
             return _inner.Remove(item);
         }
 

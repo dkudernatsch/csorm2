@@ -40,7 +40,7 @@ namespace Csorm2.Core.Query.Delete
             _ctx = ctx;
             Entity = entity;
             this.obj = obj;
-            var pk = Entity.PrimaryKeyAttribute.PropertyInfo.GetMethod.Invoke(obj, new object[0]);
+            var pk = Entity.PrimaryKeyAttribute.InvokeGetter(obj);
 
             _where = new WhereSqlFragment(
                 BinaryExpression.Eq(

@@ -73,7 +73,7 @@ namespace Csorm2.Core
                     entry.OriginalEntity[attrName] = value;
                     if (!attr.IsShadowAttribute)
                     {
-                        attr.PropertyInfo.SetMethod.Invoke(entry.EntityObject, new[] {value});
+                        attr.InvokeSetter(entry.EntityObject, value);
                     }
                 }
                 RegisterLazyLoader((TEntity) entry.EntityObject, entity, entry);
@@ -128,7 +128,7 @@ namespace Csorm2.Core
                 foreach (var (attr, obj) in valuesForEntity)
                 {
                     var val = reader[attr.DataBaseColumn];
-                    attr.PropertyInfo.SetMethod.Invoke(obj, new[] {val});
+                    attr.InvokeSetter(obj, val);
                     objectList.Add(obj);
                 }
             }
@@ -136,7 +136,7 @@ namespace Csorm2.Core
             foreach (var obj in objectList)
             {
                 var entity = stmt.Entity;
-                var pk = entity.PrimaryKeyAttribute.PropertyInfo.GetMethod.Invoke(obj, new object[0]);
+                var pk = entity.PrimaryKeyAttribute.InvokeGetter(obj);
                 var entry = _ctx.Cache.GetOrInsert(entity, pk, obj);
                 
                 foreach (var (attrName, attr) in entity.Attributes)
@@ -146,9 +146,9 @@ namespace Csorm2.Core
                         if (attr.Relation is OneToMany)
                         {
                             var otherEntity = attr.Relation.ToEntity;
-                            var otherObj = attr.PropertyInfo.GetMethod.Invoke(obj, new object[0]);
+                            var otherObj = attr.InvokeGetter(obj);
                             if(otherObj == null) continue;
-                            var otherKey = otherEntity.PrimaryKeyAttribute.PropertyInfo.GetMethod.Invoke(otherObj, new object[0]);
+                            var otherKey = otherEntity.PrimaryKeyAttribute.InvokeGetter(otherObj);
                             if (otherKey == null) throw new Exception("Trying to insert entity with untracked related entity");
                             entry.OriginalEntity[attr.Relation.FromKeyAttribute.Name] = otherKey;
                         } 
@@ -159,7 +159,7 @@ namespace Csorm2.Core
                     }
                     else if(!attr.IsShadowAttribute)
                     {
-                        var value = obj == null ? null : attr.PropertyInfo.GetMethod.Invoke(obj, new object[0]);
+                        var value = obj == null ? null : attr.InvokeGetter(obj);
                         entry.OriginalEntity[attrName] = value;
                     }
                     else
@@ -205,7 +205,7 @@ namespace Csorm2.Core
                     cacheEntry.OriginalEntity[attr.Name] = value;
                     if (!attr.IsShadowAttribute)
                     {
-                        attr.PropertyInfo.SetMethod.Invoke(cacheEntry.EntityObject, new[] {value});
+                        attr.InvokeSetter(cacheEntry.EntityObject, value);
                     }
                 }
             }

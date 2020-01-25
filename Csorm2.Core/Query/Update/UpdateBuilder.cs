@@ -70,7 +70,7 @@ namespace Csorm2.Core.Query.Update
             _whereClause = new WhereSqlFragment(BinaryExpression.Eq(
                 new Accessor {TableName = Entity.TableName, PropertyName = Entity.PrimaryKeyAttribute.DataBaseColumn},
                 Value.FromAttr(
-                    Entity.PrimaryKeyAttribute.PropertyInfo.GetMethod.Invoke(_object, new object[0]),
+                    Entity.PrimaryKeyAttribute.InvokeGetter(_object),
                     Entity.PrimaryKeyAttribute
                 )));
         }
