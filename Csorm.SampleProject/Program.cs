@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Linq;
 using System.Security.Claims;
 using System.Text.Json.Serialization;
 using Csorm.SampleProject.Model;
 using Csorm2.Core;
 using Csorm2.Core.Metadata.Builders;
 using Csorm2.Core.Query;
+using Csorm2.Core.Query.Expression;
 using Csorm2.Core.Query.Select;
 using Newtonsoft.Json;
 using Npgsql;
@@ -20,8 +22,21 @@ namespace Csorm.SampleProject
                 true);
             InsertData(ctx);
             ShowNavigation(ctx);
-
+            Updates(ctx);
             Console.WriteLine();
+        }
+
+        private static void Updates(SampleDbContext ctx)
+        {
+            var teacher = ctx.Teachers.Find(1L);
+            var course = ctx.Courses.Where(new WhereSqlFragment(
+                BinaryExpression.Eq(
+                    new Accessor{PropertyName = "Name", TableName = "Course"}, Value.String("SWE3", "name")
+                    )
+                )).First();
+            teacher.Salary += 1_000;
+            course.Active = false;
+            ctx.SaveChanges();
         }
 
         private static void ShowNavigation(SampleDbContext ctx)
