@@ -61,11 +61,9 @@
           <e p="ObjectCache.cs" t="Include" />
           <e p="ObjectProvider.cs" t="Include" />
         </e>
-        <e p="ChangeTrackedSet.cs" t="Include" />
         <e p="Csorm2.Core.csproj" t="IncludeRecursive" />
         <e p="DatabaseConnection.cs" t="Include" />
         <e p="DbContext.cs" t="Include" />
-        <e p="DbContextConfiguration.cs" t="Include" />
         <e p="DbSet.cs" t="Include" />
         <e p="DbSetProvider.cs" t="Include" />
         <e p="DDL" t="Include">

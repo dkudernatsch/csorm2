@@ -7,9 +7,9 @@ using BinaryExpression = Csorm2.Core.Query.Expression.BinaryExpression;
 namespace Csorm2.Core
 {
     /// <summary>
-    /// Object representing an interface to the database based on Enity types
+    /// A <see cref="DbSet{T}"/> can be used to retrieve, query, and delete instances of <typeparamref name="T"/> and persist these changes to the database
     /// </summary>
-    /// <typeparam name="T">type of the entity</typeparam>
+    /// <typeparam name="T">type of the entity operated on by this set. </typeparam>
     public abstract class DbSet<T>
     {
         private DbContext _ctx;
@@ -18,7 +18,8 @@ namespace Csorm2.Core
             _ctx = ctx;
         }
         /// <summary>
-        /// Gets All entities for a specific type
+        /// Finds all entities of the type <typeparamref name="T"/> in the database
+        /// Returns a lazy IEnumerable and the actual Database query is only sent if it is iterated
         /// </summary>
         /// <returns></returns>
         public IEnumerable<T> All()
@@ -41,7 +42,7 @@ namespace Csorm2.Core
             return _ctx.Connection.Select(query);
         }
         /// <summary>
-        /// Finds a specific entity with the given primary key
+        /// Finds a specific entity with the given primary key, returns null is the given key was not found
         /// </summary>
         /// <param name="primaryKey"></param>
         /// <returns></returns>

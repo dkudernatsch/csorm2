@@ -6,6 +6,9 @@ using Csorm2.Core.Query.Select;
 
 namespace Csorm2.Core.Query
 {
+    /// <summary>
+    /// Utility Class to instantiate different query objects
+    /// </summary>
     public class QueryBuilder
     {
         private DbContext _ctx;

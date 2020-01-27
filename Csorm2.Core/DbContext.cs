@@ -12,9 +12,20 @@ using Csorm2.Core.Metadata.Builders;
 
 namespace Csorm2.Core
 {
+    /// <summary>
+    /// DbContext represents the session with a database and can be used to insert, update, delete and query objects as entities from and to the database.
+    /// Each DbContext holds an internal Cache of queried objects to ensure object identity, when querying the database, however identity is not preserved across multiple contexts
+    /// 
+    /// </summary>
     public abstract class DbContext : IDisposable
 
     {
+        /// <summary>
+        /// Initializes a new DbContext with the given Connection provider
+        /// The connection provider is invoked each time a sql query will be sent
+        /// Theoretically supports any <see cref="IDbConnection"/>, however, only the postgres connector is tested
+        /// </summary>
+        /// <param name="connection"></param>
         public DbContext(Func<IDbConnection> connection)
         {
             _connectionProvider = connection;
@@ -23,23 +34,37 @@ namespace Csorm2.Core
             ChangeTracker = new ChangeTracker(this);
             Cache = new ObjectCache(this);
         }
-
+        /// <summary>
+        /// Provides access to the schema of the current database context
+        /// Any Entities <typeparam name="{T}"/> provieded as <see cref="DbSet{T}"/> will be converted to an in memeory representation of the database schema (table, attributes, relations, ...)
+        /// </summary>
         public Schema Schema { get; private set; } = new Schema();
-
+        /// <summary>
+        /// Primary Object cache 
+        /// </summary>
         public ObjectCache Cache { get; }
+        
 
         private readonly Func<IDbConnection> _connectionProvider;
+        /// <summary>
+        /// Invokes Connection Provider
+        /// </summary>
         public DatabaseConnection Connection => new DatabaseConnection(this, _connectionProvider.Invoke());
-
+        
+        /// <summary>
+        /// Provides access to information and operations for entity instances this context is tracking.
+        /// </summary>
         public ChangeTracker ChangeTracker { get; }
 
         //creates generic implementations for each of the users DbSets 
         private void InitializeDbSets()
         {
+            // fetch all properties of this object of type DbSet<?>
             var dbSetProperties = GetType().GetProperties()
                 .Where(p => p.PropertyType.IsGenericType &&
                             p.PropertyType.GetGenericTypeDefinition() == typeof(DbSet<>));
-
+            
+            // for each dbset initialize a generic implementation
             foreach (var dbSetProperty in dbSetProperties)
             {
                 if (dbSetProperty.CanRead && dbSetProperty.CanWrite)
@@ -50,14 +75,18 @@ namespace Csorm2.Core
                 }
             }
         }
-
+        /// <summary>
+        /// Builds the database schema from DbSets of this instance
+        /// </summary>
         private void InitializeSchema()
         {
+            // get entity types from dbsets 
+            // any dbset<T> -> collect T as entity type
             var entityTypes = GetType().GetProperties()
                 .Where(p => p.PropertyType.IsGenericType &&
                             p.PropertyType.GetGenericTypeDefinition() == typeof(DbSet<>))
                 .Select(p => p.PropertyType.GetGenericArguments()[0]);
-
+            
             var schemaBuilder = new SchemaBuilder(entityTypes);
             schemaBuilder.Build();
             foreach (var entity in schemaBuilder.Context.Entities)
@@ -65,18 +94,26 @@ namespace Csorm2.Core
                 Schema.AddEntity(entity.Value);
             }
         }
-
+        /// <summary>
+        /// Persist all changes made to tracked objects since the last time SaveChanges has been called
+        /// </summary>
         public void SaveChanges()
         {
             ChangeTracker.SaveChanges();
         }
-
+        /// <summary>
+        /// Ensures that all Database tables have been dropped and recreated
+        /// Use this method onyl if you dont care about the data currently in the database and you want new empty tables
+        /// </summary>
         public void EnsureRecreated()
         {
             EnsureDeleted();
             EnsureCreated();
         }
-
+        /// <summary>
+        /// Ensures that all database tables exist
+        /// will not recreate tables that are already in the database 
+        /// </summary>
         public void EnsureCreated()
         {
             var ddl = CreateDdl();
@@ -85,7 +122,10 @@ namespace Csorm2.Core
             conn.ExecuteDdl(ddl);
             conn.Commit();
         }
-
+        /// <summary>
+        /// Drops all tables and associated data from the database
+        /// All data will be lost
+        /// </summary>
         public void EnsureDeleted()
         {
             var ddl = RemoveDdl();
@@ -118,7 +158,9 @@ namespace Csorm2.Core
                 $"DROP TABLE IF EXISTS {table} CASCADE;\n");
             return string.Join("", tables);
         }
-
+        /// <summary>
+        /// Disposes of the current DbContext instance
+        /// </summary>
         public void Dispose()
         {
             Connection.Dispose();
