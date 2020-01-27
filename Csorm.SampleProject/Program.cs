@@ -32,33 +32,53 @@ namespace Csorm.SampleProject
 
         private static void Updates(SampleDbContext ctx)
         {
-            var teacher = ctx.Teachers.Find(1L);
+            // custom queries are somewhat supported
             var course = ctx.Courses.Where(new WhereSqlFragment(
                 BinaryExpression.Eq(
-                    new Accessor {PropertyName = "Name", TableName = "Course"}, Value.String("SWE3", "name")
+                    //Course with 'Name' equal to 'SWE3' 
+                    new Accessor {PropertyName = "Name", TableName = "Course"}, 
+                    Value.String("SWE3", "name")
                 )
             )).First();
-            teacher.Salary += 1_000;
+            // changes to tracked objects are automatically persisted once saveChanges is called
+            course.Teacher.Salary += 1_000;
             course.Active = false;
+            ctx.SaveChanges();
+
+            var students = ctx.Students.All();
+            
+            // remove all inactive courses from students
+            // remove operation on manyToMany relation
+            foreach (var student in students)
+            {
+                student.Courses = student.Courses
+                    .Where(c => c.Active)
+                    .ToList();
+            }
             ctx.SaveChanges();
         }
 
         private static void ShowNavigation(SampleDbContext ctx)
         {
+            // query a specific object by key
             var student = ctx.Students.Find(1L);
-            Console.WriteLine(JsonConvert.SerializeObject(student.Class));
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine(JsonConvert.SerializeObject(student.Class.Students));
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine(JsonConvert.SerializeObject(student.Class.Teacher.Classes));
-            Console.WriteLine();
-            Console.WriteLine();
+            
+            // navigate a ManyToOne relation
+            var clazz = student.Class;
+            Console.WriteLine(JsonConvert.SerializeObject(clazz) + "\n\n");
+            
+            // navigate a oneToMany relation
+            var students = clazz.Students;
+            Console.WriteLine(JsonConvert.SerializeObject(students) + "\n\n");
+            
+            //navigate a manyToMany relation
+            var courses = student.Courses;
+            Console.WriteLine(JsonConvert.SerializeObject(courses) + "\n\n");
         }
 
         private static void InsertData(SampleDbContext ctx)
         {
+            // Insert a normal object with no relations
             var teacher1 = ctx.Teachers.Add(new Teacher
                 {BDay = DateTime.Now, FirstName = "abc1", Name = "def1", Salary = 3500});
             var teacher2 = ctx.Teachers.Add(new Teacher
@@ -69,7 +89,7 @@ namespace Csorm.SampleProject
                 {BDay = DateTime.Now, FirstName = "abc4", Name = "def4", Salary = 3500});
 
             ctx.SaveChanges();
-
+            // Insert an object with a ManyToOne relation with existing tracked object
             var class1 = ctx.Classes.Add(new Class {Name = "BIF1", Teacher = teacher1});
             var class2 = ctx.Classes.Add(new Class {Name = "BIF2", Teacher = teacher1});
             var class3 = ctx.Classes.Add(new Class {Name = "BIF3", Teacher = teacher2});
@@ -80,7 +100,7 @@ namespace Csorm.SampleProject
             var course3 = ctx.Courses.Add(new Course {Active = true, Name = "FUS", Teacher = teacher2});
             var course4 = ctx.Courses.Add(new Course {Active = true, Name = "VTSE", Teacher = teacher4});
             ctx.SaveChanges();
-
+            
             var student1 = ctx.Students.Add(new Student
                 {BDay = DateTime.Now, FirstName = "ghi1", Name = "jkl1", Class = class1});
             var student2 = ctx.Students.Add(new Student
@@ -93,8 +113,8 @@ namespace Csorm.SampleProject
                 {BDay = DateTime.Now, FirstName = "ghi5", Name = "jkl5", Class = class1});
 
             ctx.SaveChanges();
-            var courses = student1.Courses;
             
+            // Associate tow sides of a manyToMany relation with each other
             student1.Courses.Add(course1);
             student1.Courses.Add(course2);
             student1.Courses.Add(course3);
@@ -114,7 +134,7 @@ namespace Csorm.SampleProject
             student5.Courses.Add(course1);
             student5.Courses.Add(course2);
             student5.Courses.Add(course3);
-            
+
             ctx.SaveChanges();
         }
     }

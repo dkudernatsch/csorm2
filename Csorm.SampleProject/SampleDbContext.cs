@@ -16,11 +16,6 @@ namespace Csorm.SampleProject
         public DbSet<Teacher> Teachers { get; set; }
         public DbSet<Class> Classes { get; set; }
         public DbSet<Course> Courses { get; set; }
-        
-        public override Action<DbContextConfiguration> OnConfiguring()
-        {
-            return (cfg) => { cfg.ConnectionString = "connect"; };
-        }
-        
+
     }
 }

@@ -16,7 +16,6 @@
       <e p="Csorm.SampleProject" t="IncludeRecursive">
         <e p="bin" t="ExcludeRecursive" />
         <e p="Csorm.SampleProject.csproj" t="IncludeRecursive" />
-        <e p="data.sql" t="Include" />
         <e p="Model" t="Include">
           <e p="Class.cs" t="Include" />
           <e p="Course.cs" t="Include" />
@@ -145,10 +144,11 @@
       <e p="csorm2.sln" t="IncludeFlat" />
       <e p="Csorm2.Tests" t="IncludeRecursive">
         <e p="bin" t="ExcludeRecursive" />
-        <e p="Csorm2.Tests.csproj" t="IncludeRecursive" />
-        <e p="DDL" t="Include">
-          <e p="TestTableDefinition.cs" t="Include" />
+        <e p="ChangeTracking" t="Include">
+          <e p="ChangeTrackerTests.cs" t="Include" />
+          <e p="ChangeTrackingTests.cs" t="Include" />
         </e>
+        <e p="Csorm2.Tests.csproj" t="IncludeRecursive" />
         <e p="obj" t="ExcludeRecursive">
           <e p="Debug" t="Include">
             <e p="netcoreapp3.0" t="Include">
@@ -160,10 +160,7 @@
           <e p="TestSchemaConstruction.cs" t="Include" />
         </e>
         <e p="Schema" t="Include">
-          <e p="ChangeTrackerTests.cs" t="Include" />
-          <e p="ChangeTrackingTests.cs" t="Include" />
           <e p="SchemaBuilderTests.cs" t="Include" />
-          <e p="TestContext.cs" t="Include" />
         </e>
         <e p="TestClasses" t="Include">
           <e p="A.cs" t="Include" />

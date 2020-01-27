@@ -15,9 +15,5 @@ namespace Csorm2.Tests.TestClasses
         public DbSet<Grade> Grades { get; set; }
         public DbSet<Course> Courses { get; set; }
         
-        public override Action<DbContextConfiguration> OnConfiguring()
-        {
-            return (cfg) => { cfg.ConnectionString = ""; };
-        }
     }
 }

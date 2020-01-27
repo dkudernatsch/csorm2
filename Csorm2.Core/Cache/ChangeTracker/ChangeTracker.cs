@@ -21,6 +21,9 @@ namespace Csorm2.Core.Cache.ChangeTracker
         private readonly Dictionary<Entity, List<InsertExpression<Dictionary<string, object>>>> _newManyToManys
             = new Dictionary<Entity, List<InsertExpression<Dictionary<string, object>>>>();
         
+        private readonly Dictionary<Entity, List<DeleteQuery<Dictionary<string, object>>>> _removeManyToManys 
+            = new Dictionary<Entity, List<DeleteQuery<Dictionary<string, object>>>>();
+        
         private readonly Dictionary<Entity, HashSet<object>> _deletedEntityCache = new Dictionary<Entity, HashSet<object>>();
 
         public bool IsCollectingChanges { get; set; } = false;
@@ -81,9 +84,17 @@ namespace Csorm2.Core.Cache.ChangeTracker
                 _context.Connection.Delete(delete);
             }
             
+            foreach (var delete in _removeManyToManys.Values.SelectMany(s => s))
+            {
+                _context.Connection.Delete(delete);
+            }
+            
             conn.Commit();
             Generation++;
+            
             _newEntityCache.Clear();
+            _newManyToManys.Clear();
+            _removeManyToManys.Clear();
             _deletedEntityCache.Clear();
             
         }
@@ -112,6 +123,12 @@ namespace Csorm2.Core.Cache.ChangeTracker
         {
             _newManyToManys.GetOrInsert(manyToManyEntity, new List<InsertExpression<Dictionary<string, object>>>())
                 .Add(manyToManyInsert);
+        }
+
+        public void RemoveManyToMany(Entity manyToManyEntity, DeleteQuery<Dictionary<string, object>> manyToManyDelete)
+        {
+            _removeManyToManys.GetOrInsert(manyToManyEntity, new List<DeleteQuery<Dictionary<string, object>>>())
+                .Add(manyToManyDelete);
         }
     }
 }

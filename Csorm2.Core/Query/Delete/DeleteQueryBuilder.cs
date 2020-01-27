@@ -32,14 +32,12 @@ namespace Csorm2.Core.Query.Delete
     {
         private DbContext _ctx;
         public Entity Entity { get; }
-        private T obj;
         private WhereSqlFragment _where;
 
         public DeleteQuery(DbContext ctx, Entity entity, T obj)
         {
             _ctx = ctx;
             Entity = entity;
-            this.obj = obj;
             var pk = Entity.PrimaryKeyAttribute.InvokeGetter(obj);
 
             _where = new WhereSqlFragment(
@@ -47,6 +45,13 @@ namespace Csorm2.Core.Query.Delete
                     new Accessor{TableName = Entity.TableName, PropertyName = Entity.PrimaryKeyAttribute.DataBaseColumn},
                     Value.FromAttr(pk, Entity.PrimaryKeyAttribute)
                     ));
+        }
+
+        public DeleteQuery(DbContext ctx, Entity e, WhereSqlFragment whereSqlFragment)
+        {
+            _ctx = ctx;
+            Entity = e;
+            _where = whereSqlFragment;
         }
 
         public string AsSqlString()

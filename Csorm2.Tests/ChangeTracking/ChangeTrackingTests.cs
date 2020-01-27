@@ -8,6 +8,7 @@ using Xunit;
 
 namespace Csorm2.Tests.Schema
 {
+    [Collection("IntegrationTest")]
     public class ChangeTrackingTests: IDisposable
     {
 

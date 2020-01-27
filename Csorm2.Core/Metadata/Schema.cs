@@ -18,7 +18,7 @@ namespace Csorm2.Core.Metadata
         public IReadOnlyDictionary<string, Entity> EntityNameMap { get; }
         public IReadOnlyDictionary<Type, Entity> EntityTypeMap { get; }
         
-        internal void AddEntity(Entity e)
+        public void AddEntity(Entity e)
         {
             _entityMap.Add(e.EntityName, e);
             if(e.ClrType != null) _entityTypeMap.Add(e.ClrType, e);

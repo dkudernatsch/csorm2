@@ -17,7 +17,6 @@ namespace Csorm2.Core
     {
         public DbContext(Func<IDbConnection> connection)
         {
-            OnConfiguring()(Config);
             _connectionProvider = connection;
             InitializeDbSets();
             InitializeSchema();
@@ -28,8 +27,6 @@ namespace Csorm2.Core
         public Schema Schema { get; private set; } = new Schema();
 
         public ObjectCache Cache { get; }
-
-        public DbContextConfiguration Config { get; } = new DbContextConfiguration();
 
         private readonly Func<IDbConnection> _connectionProvider;
         public DatabaseConnection Connection => new DatabaseConnection(this, _connectionProvider.Invoke());
@@ -68,8 +65,6 @@ namespace Csorm2.Core
                 Schema.AddEntity(entity.Value);
             }
         }
-
-        public abstract Action<DbContextConfiguration> OnConfiguring();
 
         public void SaveChanges()
         {
