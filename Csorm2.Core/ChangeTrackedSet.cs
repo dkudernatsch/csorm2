@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Csorm2.Core.Attributes;
-using Csorm2.Core.Cache.ChangeTracker;
 using Csorm2.Core.Metadata;
 using ManyToMany = Csorm2.Core.Metadata.ManyToMany;
 
@@ -31,7 +30,7 @@ namespace Csorm2.Core
 
             var pk = Entity.PrimaryKeyAttribute.InvokeGetter(item);
             var fkAttr = _relation.ToKeyAttribute;
-            var entry = _context.Cache.ObjectPool[Entity][pk];
+            //var entry = _context.Cache.ObjectPool[Entity][pk];
             _relation.ToEntityAttribute?.InvokeSetter(item, null);
             return _inner.Remove(item);
         }

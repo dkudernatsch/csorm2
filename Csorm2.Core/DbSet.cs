@@ -76,6 +76,7 @@ namespace Csorm2.Core
         {
             return _ctx.ChangeTracker.InsertNew(entity);
         }
+        
         /// <summary>
         /// removes a tracked entity from the database
         /// note this operation only adds this change to a tracked list

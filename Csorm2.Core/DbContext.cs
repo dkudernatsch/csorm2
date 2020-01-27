@@ -12,21 +12,22 @@ using Csorm2.Core.Metadata.Builders;
 
 namespace Csorm2.Core
 {
-    public abstract class DbContext
+    public abstract class DbContext : IDisposable
+
     {
-        public DbContext(Func<IDbConnection> connection, bool createDatabase = false)
+        public DbContext(Func<IDbConnection> connection)
         {
             OnConfiguring()(Config);
             _connectionProvider = connection;
             InitializeDbSets();
             InitializeSchema();
             ChangeTracker = new ChangeTracker(this);
-            if (createDatabase) CreateDatabase();
+            Cache = new ObjectCache(this);
         }
 
         public Schema Schema { get; private set; } = new Schema();
 
-        public ObjectCache Cache { get; } = new ObjectCache();
+        public ObjectCache Cache { get; }
 
         public DbContextConfiguration Config { get; } = new DbContextConfiguration();
 
@@ -70,9 +71,18 @@ namespace Csorm2.Core
 
         public abstract Action<DbContextConfiguration> OnConfiguring();
 
-        public void SaveChanges() => ChangeTracker.SaveChanges();
+        public void SaveChanges()
+        {
+            ChangeTracker.SaveChanges();
+        }
 
-        private void CreateDatabase()
+        public void EnsureRecreated()
+        {
+            EnsureDeleted();
+            EnsureCreated();
+        }
+
+        public void EnsureCreated()
         {
             var ddl = CreateDdl();
             using var conn = Connection;
@@ -80,22 +90,43 @@ namespace Csorm2.Core
             conn.ExecuteDdl(ddl);
             conn.Commit();
         }
-        
+
+        public void EnsureDeleted()
+        {
+            var ddl = RemoveDdl();
+            using var conn = Connection;
+            conn.BeginTransaction();
+            conn.ExecuteDdl(ddl);
+            conn.Commit();
+        }
+
         private string CreateDdl()
         {
             var tables = Schema.EntityNameMap.Values.Select(val => new TableDefinition(val));
 
             var tableDefinitions = tables.ToList();
-            
-            var constraints = tableDefinitions.SelectMany(t => 
+
+            var constraints = tableDefinitions.SelectMany(t =>
                     t.Constraints()
                         .OrderBy(c => c is PrimaryKeyConstraint)
                         .Select(c => c.AsSqlString()))
-                        .Distinct()
+                .Distinct()
                 .ToList();
-            
+
             return
                 $"{string.Join(";\n", tableDefinitions.Select(t => t.AsSqlString()))};\n\n{string.Join(";\n", constraints)};";
+        }
+
+        private string RemoveDdl()
+        {
+            var tables = Schema.EntityNameMap.Values.Select(val => val.TableName).Select(table =>
+                $"DROP TABLE IF EXISTS {table} CASCADE;\n");
+            return string.Join("", tables);
+        }
+
+        public void Dispose()
+        {
+            Connection.Dispose();
         }
     }
 }

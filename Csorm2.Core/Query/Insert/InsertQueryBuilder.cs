@@ -41,17 +41,94 @@ namespace Csorm2.Core.Query.Insert
             _ctx = ctx;
         }
 
-        public InsertStatement<T> Value(T obj)
+        public InsertExpression<T> Value(T obj)
         {
             return Values(new[] {obj});
         }
 
-        public InsertStatement<T> Values(IEnumerable<T> obj)
+        public InsertExpression<T> Values(IEnumerable<T> obj)
         {
-            return new InsertStatement<T>(obj, _ctx, _entity);
+            return new InsertExpression<T>(obj, _ctx, _entity);
         }
     }
 
+    public class InsertExpression<T> : ISqlExpression
+    {
+        public IEnumerable<T> InsertedObjects { get; }
+        private readonly DbContext _context;
+        public Entity Entity { get; }
+
+        public InsertExpression(IEnumerable<T> toInsert, DbContext context, Entity entity)
+        {
+            InsertedObjects = toInsert;
+            _context = context;
+            Entity = entity;
+        }
+        
+        public string AsSqlString()
+        {
+            var toInsert = InsertAbleAttributes.Select(attr => attr.DataBaseColumn)
+                .Aggregate("", (acc, next) => acc == "" ? next : acc + ", " + next);
+            
+            var insertPositions = InsertAbleAttributes.Aggregate("", (acc, next) => acc == "" ? $"@{next.DataBaseColumn}?" : acc + ", " + $"@{next.DataBaseColumn}?");
+            
+            var insertPlaceHolder = InsertedObjects.Select((s, i) => (i, s)).Aggregate("",
+                (acc, next) => acc == "" ? $"({insertPositions.Replace("?", ""+next.i)})" : acc + $", ({insertPositions.Replace("?", ""+next.i)})");
+            var returnValues = ReturnAttributes
+                .Select(attr => attr.DataBaseColumn)
+                .Aggregate("", (acc, next) => acc == "" ? next : acc + ", " + next);
+            
+            return $"INSERT INTO {Entity.TableName} ({toInsert}) " +
+                   $"VALUES {insertPlaceHolder} " +
+                   $"RETURNING {returnValues}"; 
+        }
+
+        public IEnumerable<(DbType, string, object)> GetParameters()
+        {
+            Func<Attribute, object, object> extractSimpleValue = (attr, obj) => attr.InvokeGetter(obj);
+            Func<Attribute, object, object> extractForeignKey = (attr, obj) =>
+            {
+                var relation = Entity.Attributes.FirstOrDefault(relattr => relattr.Value?.Relation?.FromKeyAttribute == attr).Value?.Relation;
+                
+                if (!(relation is ManyToOne manyToOne))
+                    throw new Exception("Tried to insert entity attribute that corresponds to other table");
+                
+                var otherEntity = relation.ToEntity;
+                var otherObj = relation.FromEntityAttribute.InvokeGetter(obj);
+                var otherPk = otherObj == null ? null :
+                    otherEntity.PrimaryKeyAttribute.InvokeGetter(otherObj);
+                
+                if (otherObj != null && (otherPk == null || !_context.Cache.EntityExists(otherEntity,otherPk)))
+                {
+                    throw new Exception("Trying to insert entity with unmanaged object relation value");
+                }
+                return otherPk;
+            };
+            //many to many column
+            if (typeof(Dictionary<string, object>).IsAssignableFrom(typeof(T)))
+            {
+                return InsertedObjects.SelectMany((obj, i) => InsertAbleAttributes.Select(attr =>
+                {
+                    var objj = (object) obj;
+                    var map = (Dictionary<string, object>) objj;
+                    return (attr.DatabaseType.Value, attr.Name + i, map[attr.Name]);
+                }));
+            }
+                
+            return InsertedObjects.SelectMany((obj, i) => InsertAbleAttributes.Select(attr =>
+                (attr.DatabaseType.Value,
+                    attr.DataBaseColumn + i, 
+                    attr.IsShadowAttribute ? extractForeignKey(attr, obj) : extractSimpleValue(attr, obj))));
+        }
+        
+        private IEnumerable<Attribute> InsertAbleAttributes => Entity.Attributes.Values
+            .Where(attr => !attr.IsEntityType)
+            .Where(attr => !attr.IsAutoInc);
+
+        private IEnumerable<Attribute> ReturnAttributes => Entity.Attributes.Values
+            .Where(attr => !attr.IsEntityType);
+    }
+    
     public class InsertStatement<T> : IStatement<T>
     {
         private IEnumerable<T> _toInsert;
@@ -88,7 +165,7 @@ namespace Csorm2.Core.Query.Insert
             
             return $"INSERT INTO {Entity.TableName} ({toInsert}) " +
                    $"VALUES {insertPlaceHolder} " +
-                   (string.IsNullOrWhiteSpace(autoIncReturn) ? "" : $"Returning {autoIncReturn}");
+                   (string.IsNullOrWhiteSpace(autoIncReturn) ? "" : $"Returning {autoIncReturn}"); 
         }
 
         public IEnumerable<(DbType, string, object)> GetParameters()
@@ -106,7 +183,7 @@ namespace Csorm2.Core.Query.Insert
                 var otherPk = otherObj == null ? null :
                     otherEntity.PrimaryKeyAttribute.InvokeGetter(otherObj);
                 
-                if (otherObj != null && (otherPk == null || _context.Cache.ObjectPool[otherEntity].GetValueOrDefault(otherPk) == null))
+                if (otherObj != null && (otherPk == null || _context.Cache.EntityExists(otherEntity,otherPk)))
                 {
                     throw new Exception("Trying to insert entity with unmanaged object relation value");
                 }

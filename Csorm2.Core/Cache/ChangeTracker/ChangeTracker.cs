@@ -1,199 +1,117 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
-using System.Net;
+using System.Text.RegularExpressions;
 using Csorm2.Core.Extensions;
 using Csorm2.Core.Metadata;
 using Csorm2.Core.Query.Delete;
 using Csorm2.Core.Query.Insert;
 using Csorm2.Core.Query.Update;
-using Attribute = Csorm2.Core.Metadata.Attribute;
 
 namespace Csorm2.Core.Cache.ChangeTracker
 {
     public class ChangeTracker
     {
         private DbContext _context;
+        
+        public uint Generation { get; private set; } = 0;
 
-        private readonly Dictionary<Entity, HashSet<object>>
-            _newEntityCache = new Dictionary<Entity, HashSet<object>>();
+        private readonly Dictionary<Entity, HashSet<object>> _newEntityCache = new Dictionary<Entity, HashSet<object>>();
+        
+        private readonly Dictionary<Entity, List<InsertExpression<Dictionary<string, object>>>> _newManyToManys
+            = new Dictionary<Entity, List<InsertExpression<Dictionary<string, object>>>>();
+        
+        private readonly Dictionary<Entity, HashSet<object>> _deletedEntityCache = new Dictionary<Entity, HashSet<object>>();
 
-        private readonly Dictionary<Entity, HashSet<object>> _deleteEntityCache =
-            new Dictionary<Entity, HashSet<object>>();
-
-        private readonly Dictionary<Entity, Changes> trackedChanges = new Dictionary<Entity, Changes>();
-
-        public int Generation { get; private set; } = 0;
-
-        public bool IsCollectingChanges { get; private set; } = false;
+        public bool IsCollectingChanges { get; set; } = false;
 
         public ChangeTracker(DbContext context)
         {
             _context = context;
         }
 
-        public Dictionary<Entity, IEnumerable<Changes>> CollectChanges()
+        public Dictionary<Entity, IEnumerable<EntityChanges>> CollectChanges()
         {
             IsCollectingChanges = true;
-            var dict = new Dictionary<Entity, IEnumerable<Changes>>();
-            // for each entity type
-            foreach (var (entity, entities) in _context.Cache.ObjectPool)
-            {
-                // all attributes that are directly stored as a column in the database
-                var valueAttributes = entity.Attributes
-                    .Select(attr => attr.Value)
-                    .Where(attr => !attr.IsShadowAttribute)
-                    .Where(attr => attr.PropertyInfo?.GetMethod != null)
-                    .ToList();
 
-                var changes = entities
-                    .FilterSelect(entry => ChangesFor(entity, entry.Key, entry.Value, valueAttributes))
-                    .ToList();
-
-                if (changes.Count > 0)
-                    dict[entity] = changes;
-            }
-            // changes from deletetion
-
+            var changes =_context.Cache.CollectChanges();
+            var collectedChanges = changes.GroupBy(change => change.EntityObj)
+                .Select(group => new EntityChanges(group, group.First().Entity, group.Key))
+                .GroupBy(ec => ec.Entity)
+                .ToDictionary(group => group.Key, group => group.AsEnumerable());
+            
             IsCollectingChanges = false;
-            return dict;
+            return collectedChanges;
         }
 
-        private Changes ChangesFor(Entity entity, object primaryKey, CacheEntry entry,
-            IEnumerable<Attribute> extractChangesFor)
+        public void SaveChanges()
         {
-            var changes = new Changes(entity, entry.EntityObject, primaryKey);
+            var changes = CollectChanges();
+            
+            var inserts = _newEntityCache
+                .SelectMany(kv => kv.Value
+                    .Select(obj => new InsertQueryBuilder(_context).Insert(kv.Key).Value(obj)));
 
-            var valueChanges = extractChangesFor.SelectMany(attr => ExtractChanges(entity, attr, entry));
+            var updates = changes.SelectMany(cs =>
+                cs.Value.Select(c => new UpdateBuilder(_context).Update(cs.Key).SetValues(c.Object, c.Changes)));
 
-            foreach (var change in valueChanges)
+            var deletes = _deletedEntityCache.SelectMany(kv =>
+                kv.Value.Select(obj => new DeleteQueryBuilder(_context).Delete(obj, kv.Key)));
+
+            using var conn = _context.Connection;
+            conn.BeginTransaction();
+            
+            foreach (var insert in inserts)
             {
-                if (change != null) changes.AddChange(change);
+                _context.Connection.Insert(insert);
             }
 
-            return changes.HasChanges() ? changes : null;
-        }
-
-        private IEnumerable<IValueChange> ExtractChanges(Entity e, Attribute attr, CacheEntry entry)
-        {
-            return attr.Relation == null
-                ? (IEnumerable<IValueChange>) new[] {SimpleChanges(e, attr, entry)}
-                : RelationChanges(e, attr, entry);
-        }
-
-        private List<IValueChange> RelationChanges(Entity e, Attribute attr, CacheEntry entry)
-        {
-            var oldFkVal = entry.OriginalEntity[attr.Relation.FromKeyAttribute.Name];
-            var newRelationValue = attr.InvokeGetter(entry.EntityObject);
-            var oldRelationValue = entry.OriginalEntity.GetValueOrDefault(attr.Name);
-
-            //was not loaded and user did not add something
-            if (newRelationValue == null && oldRelationValue == null) return new List<IValueChange>();
-
-            var newFkVal = newRelationValue != null
-                ? attr.Relation.ToEntity.PrimaryKeyAttribute.InvokeGetter(newRelationValue)
-                : null;
-
-            //relation delete
-            if (newRelationValue == null)
+            foreach (var newManyToMany in _newManyToManys.Values.SelectMany(s => s))
             {
-                return new List<IValueChange> {new ValueChange(e, attr.Relation.FromKeyAttribute, oldFkVal, null)};
+                _context.Connection.InsertStatement(newManyToMany);
             }
-
-            //relation changed/or added
-            if (!Equals(oldFkVal, newFkVal))
+            
+            foreach (var update in updates)
             {
-                var newEntity = _context.Cache.ObjectPool[attr.Relation.ToEntity].GetValueOrDefault(newFkVal);
-                if (newEntity == null)
-                {
-                    _newEntityCache.GetOrInsert(attr.Relation.ToEntity, new HashSet<object>()).Add(newRelationValue);
-                    return new List<IValueChange>
-                    {
-                        new DelayedValueChange(e, oldRelationValue, newRelationValue,
-                            attr.Relation.ToEntity.PrimaryKeyAttribute, attr.Relation.FromKeyAttribute)
-                    };
-                }
-
-                return new List<IValueChange> {new ValueChange(e, attr.Relation.FromKeyAttribute, oldFkVal, newFkVal)};
+                _context.Connection.Update(update);
             }
-
-            //was normally loaded and no changes were made
-            if (Equals(oldFkVal, newFkVal))
+            
+            foreach (var delete in deletes)
             {
-                return new List<IValueChange>();
+                _context.Connection.Delete(delete);
             }
-
-            throw new NotSupportedException($"Relationstate change of Entity {e.EntityName} not supported");
+            
+            conn.Commit();
+            Generation++;
+            _newEntityCache.Clear();
+            _deletedEntityCache.Clear();
+            
         }
-
-        private static IValueChange SimpleChanges(Entity e, Attribute attr, CacheEntry entry)
-        {
-            var newVal = attr.InvokeGetter(entry.EntityObject);
-            var oldVal = entry.OriginalEntity[attr.Name];
-            if (Equals(oldVal, newVal)) return null; // no changes
-
-            if (e.PrimaryKeyAttribute.Name == attr.Name)
-                throw new ArgumentException(
-                    "Primary key updates are not supported consider deleting the entity and inserting a new one");
-
-            return new ValueChange(e, attr, oldVal, newVal);
-        }
-
+        
         public T InsertNew<T>(T t)
         {
             var entity = _context.Schema.EntityTypeMap[typeof(T)];
             _newEntityCache.GetOrInsert(entity, new HashSet<object>()).Add(t);
             return t;
         }
+        
+        public object InsertNew(Entity entity, object obj)
+        {
+            _newEntityCache.GetOrInsert(entity, new HashSet<object>()).Add(obj);
+            return obj;
+        }
 
         public T Delete<T>(T t)
         {
             var entity = _context.Schema.EntityTypeMap[typeof(T)];
-            _deleteEntityCache.GetOrInsert(entity, new HashSet<object>()).Add(t);
+            _deletedEntityCache.GetOrInsert(entity, new HashSet<object>()).Add(t);
             return t;
         }
 
-        public void SaveChanges()
+        public void AddManyToMany(Entity manyToManyEntity, InsertExpression<Dictionary<string, object>> manyToManyInsert)
         {
-            var changes = CollectChanges();
-            var newEntities = _newEntityCache;
-            var deleteEntities = _deleteEntityCache;
-
-            var asInserts
-                = newEntities.SelectMany(kv =>
-                    kv.Value.Select(obj => new InsertQueryBuilder(_context).Insert(kv.Key).Value(obj)));
-
-            var updates = changes.SelectMany(cs =>
-                cs.Value.Select(c =>
-                    new UpdateBuilder(_context).Update(cs.Key).SetValues(c.Obj, c.ChangesValues())));
-
-            var deletes = deleteEntities.SelectMany(kv =>
-                kv.Value.Select(obj => new DeleteQueryBuilder(_context).Delete(obj, kv.Key)));
-
-            using var conn = _context.Connection;
-            conn.BeginTransaction();
-
-            foreach (var insert in asInserts)
-            {
-                _context.Connection.Insert(insert);
-            }
-
-            foreach (var update in updates)
-            {
-                _context.Connection.Update(update);
-            }
-
-            foreach (var delete in deletes)
-            {
-                _context.Connection.Delete(delete);
-            }
-
-            conn.Commit();
-            Generation++;
-            _newEntityCache.Clear();
-            _deleteEntityCache.Clear();
+            _newManyToManys.GetOrInsert(manyToManyEntity, new List<InsertExpression<Dictionary<string, object>>>())
+                .Add(manyToManyInsert);
         }
     }
 }

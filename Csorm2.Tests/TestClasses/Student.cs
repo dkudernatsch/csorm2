@@ -11,7 +11,7 @@ namespace Csorm2.Tests.TestClasses
         public Student(){}
         [PrimaryKey]
         [AutoIncrement]
-        public long Id { get; set; }
+        public long? Id { get; set; }
         public string Name { get; set; }
 
         private ICollection<Grade> _grades;

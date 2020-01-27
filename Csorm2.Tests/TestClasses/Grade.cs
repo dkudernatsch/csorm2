@@ -10,7 +10,7 @@ namespace Csorm2.Tests.TestClasses
         private ILazyLoader Lazy { get; set; } = new LazyLoader();
         
         [PrimaryKey]
-        public long Id { get; set; }
+        public long? Id { get; set; }
 
         public int GradeValue { get; set; }
 

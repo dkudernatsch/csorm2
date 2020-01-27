@@ -19,7 +19,7 @@ namespace Csorm2.Core.Cache
         private readonly Entity _entity;
         private readonly DbContext _context;
         private readonly CacheEntry _entry;
-        private Dictionary<string, int> _attributeGenerations = new Dictionary<string, int>();
+        private Dictionary<string, uint> _attributeGenerations = new Dictionary<string, uint>();
 
         public CachedLazyLoader(Entity entity, DbContext context, CacheEntry entry)
         {
@@ -40,10 +40,13 @@ namespace Csorm2.Core.Cache
             }
 
             var attribute = _entity.Attributes[name];
+            
             var fkAttr = attribute.Relation.ToKeyAttribute;
             var pkAttr = attribute.Relation.FromKeyAttribute;
+            
             var pk = pkAttr.InvokeGetter(entityObj);
             var otherPk = attribute.Relation.ToEntity.PrimaryKeyAttribute;
+            
             var query = new QueryBuilder(_context)
                 .Select<T>()
                 .Where(new WhereSqlFragment(BinaryExpression.Eq(
@@ -52,11 +55,11 @@ namespace Csorm2.Core.Cache
                 ))).Build();
             var loaded = _context.Connection.Select(query).ToList();
             loadTo = loaded;
-            _entry.RelationIdMap[name] =
-                loaded.Select(obj => otherPk.InvokeGetter(obj))
-                    .ToHashSet();
 
-
+            _entry.ReplaceRelatedKeys(attribute,
+                loaded.Select(obj => otherPk.InvokeGetter(obj)).ToList()
+            );
+            _attributeGenerations[name] = _context.ChangeTracker.Generation;
             return loadTo;
         }
 
@@ -66,12 +69,10 @@ namespace Csorm2.Core.Cache
 
             var attribute = _entity.Attributes[name];
             var fkAttr = attribute.Relation.FromKeyAttribute;
-            var pk = _entity.PrimaryKeyAttribute.InvokeGetter(entityObj);
 
             var otherEntity = _context.Schema.EntityTypeMap[typeof(T)];
-
-            var cacheEntry = _context.Cache.GetOrInsert(_entity, pk, entityObj);
-            var fk = cacheEntry.OriginalEntity[fkAttr.Name];
+            
+            var fk = _entry.ShadowAttributes[fkAttr.Name];
 
             var query = new QueryBuilder(_context)
                 .Select<T>()
@@ -87,7 +88,7 @@ namespace Csorm2.Core.Cache
 
             var loaded = _context.Connection.Select(query).First();
             loadTo = loaded;
-            _entry.OriginalEntity[name] = loaded;
+            _entry.OriginalValues[attribute.Name] = loaded;
             _attributeGenerations[name] = _context.ChangeTracker.Generation;
             return loaded;
         }
@@ -127,9 +128,9 @@ namespace Csorm2.Core.Cache
 
             var loaded = _context.Connection.Select(query).ToList();
             loadTo = loaded;
-            _entry.RelationIdMap[propertyName] = loaded.Select(obj =>
-                    otherEntity.PrimaryKeyAttribute.InvokeGetter(obj))
-                .ToHashSet();
+            _entry.ReplaceRelatedKeys(propAttr, loaded.Select(obj =>
+                    otherEntity.PrimaryKeyAttribute.InvokeGetter(obj)).ToList());
+            _attributeGenerations[propertyName] = _context.ChangeTracker.Generation;
             return loaded;
         }
 
@@ -140,7 +141,7 @@ namespace Csorm2.Core.Cache
             // if its null always load
             if (loadTo == null) return true;
             // data may be stale -> reload
-            if (_attributeGenerations.GetOrInsert(name, -1) < _context.ChangeTracker.Generation) return true;
+            if (_attributeGenerations.GetOrInsert(name, (uint) 0) < _context.ChangeTracker.Generation) return true;
             //otherwise dont load
             return false;
         }

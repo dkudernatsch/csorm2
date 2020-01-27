@@ -29,7 +29,7 @@ namespace Csorm2.Core.Query
                 .Select(entity.Attributes.Values.Where(attr => !attr.IsEntityType).Select(attr => attr.DataBaseColumn));
         }
 
-        public InsertStatement<TEntity> Insert<TEntity>(TEntity value)
+        public InsertExpression<TEntity> Insert<TEntity>(TEntity value)
         {
             return new InsertQueryBuilder(_ctx)
                 .Insert<TEntity>()

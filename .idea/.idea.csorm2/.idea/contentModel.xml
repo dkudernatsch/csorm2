@@ -49,11 +49,13 @@
         </e>
         <e p="bin" t="ExcludeRecursive" />
         <e p="Cache" t="Include">
+          <e p="CachedDataReader.cs" t="Include" />
           <e p="CachedLazyLoader.cs" t="Include" />
           <e p="CacheEntry.cs" t="Include" />
           <e p="ChangeTracker" t="Include">
-            <e p="Changes.cs" t="Include" />
             <e p="ChangeTracker.cs" t="Include" />
+            <e p="EntityChanges.cs" t="Include" />
+            <e p="ValueChange.cs" t="Include" />
           </e>
           <e p="ILazyLoader.cs" t="Include" />
           <e p="LazyLoader.cs" t="Include" />
@@ -158,6 +160,8 @@
           <e p="TestSchemaConstruction.cs" t="Include" />
         </e>
         <e p="Schema" t="Include">
+          <e p="ChangeTrackerTests.cs" t="Include" />
+          <e p="ChangeTrackingTests.cs" t="Include" />
           <e p="SchemaBuilderTests.cs" t="Include" />
           <e p="TestContext.cs" t="Include" />
         </e>

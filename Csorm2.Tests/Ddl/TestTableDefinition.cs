@@ -20,7 +20,7 @@ namespace Csorm2.Tests.Ddl
         public void TestTable()
         {
             var ctx =  new TestContext(
-                () => new NpgsqlConnection("Host=localhost;Port=5432;User Id=user;Password=1234;Database=test_db"), true);
+                () => new NpgsqlConnection("Host=localhost;Port=5432;User Id=user;Password=1234;Database=test_db"));
             
             var tabledef = new TableDefinition(ctx.Schema.EntityTypeMap[typeof(Student)]);
             

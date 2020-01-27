@@ -9,7 +9,7 @@ namespace Csorm2.Tests.TestClasses
         private ILazyLoader Lazy { get; set; } = new LazyLoader();
 
         [PrimaryKey] [Column("Id")] 
-        public long CourseId { get; set; }
+        public long? CourseId { get; set; }
         public string Name { get; set; }
         public string Room { get; set; }
 

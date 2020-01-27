@@ -18,11 +18,15 @@ namespace Csorm.SampleProject
         static void Main(string[] args)
         {
             var ctx = new SampleDbContext(
-                () => new NpgsqlConnection("Host=localhost;Port=5432;User Id=user;Password=1234;Database=test_db"),
-                true);
+                () => new NpgsqlConnection("Host=localhost;Port=5432;User Id=user;Password=1234;Database=test_db"));
+            ctx.EnsureRecreated();
+            
             InsertData(ctx);
+            Console.WriteLine("Inserted data");
             ShowNavigation(ctx);
+            Console.WriteLine("Queried data");
             Updates(ctx);
+            Console.WriteLine("updated data");
             Console.WriteLine();
         }
 
@@ -31,9 +35,9 @@ namespace Csorm.SampleProject
             var teacher = ctx.Teachers.Find(1L);
             var course = ctx.Courses.Where(new WhereSqlFragment(
                 BinaryExpression.Eq(
-                    new Accessor{PropertyName = "Name", TableName = "Course"}, Value.String("SWE3", "name")
-                    )
-                )).First();
+                    new Accessor {PropertyName = "Name", TableName = "Course"}, Value.String("SWE3", "name")
+                )
+            )).First();
             teacher.Salary += 1_000;
             course.Active = false;
             ctx.SaveChanges();
@@ -43,9 +47,14 @@ namespace Csorm.SampleProject
         {
             var student = ctx.Students.Find(1L);
             Console.WriteLine(JsonConvert.SerializeObject(student.Class));
+            Console.WriteLine();
+            Console.WriteLine();
             Console.WriteLine(JsonConvert.SerializeObject(student.Class.Students));
+            Console.WriteLine();
+            Console.WriteLine();
             Console.WriteLine(JsonConvert.SerializeObject(student.Class.Teacher.Classes));
-            
+            Console.WriteLine();
+            Console.WriteLine();
         }
 
         private static void InsertData(SampleDbContext ctx)
@@ -58,6 +67,7 @@ namespace Csorm.SampleProject
                 {BDay = DateTime.Now, FirstName = "abc3", Name = "def3", Salary = 3500});
             var teacher4 = ctx.Teachers.Add(new Teacher
                 {BDay = DateTime.Now, FirstName = "abc4", Name = "def4", Salary = 3500});
+
             ctx.SaveChanges();
 
             var class1 = ctx.Classes.Add(new Class {Name = "BIF1", Teacher = teacher1});
@@ -82,6 +92,29 @@ namespace Csorm.SampleProject
             var student5 = ctx.Students.Add(new Student
                 {BDay = DateTime.Now, FirstName = "ghi5", Name = "jkl5", Class = class1});
 
+            ctx.SaveChanges();
+            var courses = student1.Courses;
+            
+            student1.Courses.Add(course1);
+            student1.Courses.Add(course2);
+            student1.Courses.Add(course3);
+            
+            student2.Courses.Add(course2);
+            student2.Courses.Add(course3);
+            student2.Courses.Add(course4);
+            
+            student3.Courses.Add(course3);
+            student3.Courses.Add(course4);
+            student3.Courses.Add(course1);
+            
+            student4.Courses.Add(course2);
+            student4.Courses.Add(course3);
+            student4.Courses.Add(course4);
+            
+            student5.Courses.Add(course1);
+            student5.Courses.Add(course2);
+            student5.Courses.Add(course3);
+            
             ctx.SaveChanges();
         }
     }

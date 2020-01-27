@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.Common;
 using System.Linq;
 using System.Reflection;
 using Csorm2.Core.Cache;
-using Csorm2.Core.Extensions;
 using Csorm2.Core.Metadata;
 using Csorm2.Core.Query;
+using Csorm2.Core.Query.Insert;
+using Csorm2.Core.Query.Update;
 
 namespace Csorm2.Core
 {
@@ -40,7 +40,6 @@ namespace Csorm2.Core
             
             if(conn.State != ConnectionState.Open) conn.Open();
             
-            var cache = _ctx.Cache;
             using var cmd = conn.CreateCommand();
             cmd.CommandText = query.AsSqlString();
             cmd.Transaction = _transaction;
@@ -54,36 +53,23 @@ namespace Csorm2.Core
                 cmd.Parameters.Add(param);
             }
 
-            using var reader = cmd.ExecuteReader();
+            using var reader = new CachedDataReader(
+                _ctx.Cache,
+                _ctx.Schema.EntityTypeMap[typeof(TEntity)],
+                cmd.ExecuteReader(), 
+                _ctx
+                );
 
-            while (reader.Read())
+            foreach (var cacheEntry in reader.ReadAll())
             {
-                var entity = _ctx.Schema.EntityTypeMap[typeof(TEntity)];
-                var pkAttr = entity.PrimaryKeyAttribute;
-
-                var pk = reader[pkAttr.DataBaseColumn];
-
-                var entry = cache.GetOrInsert(entity, pk, ObjectProvider.Construct(entity.ClrType));
-
-                foreach (var (attrName, attr) in entity.Attributes)
-                {
-                    if (attr.IsEntityType) continue;
-
-                    var value = reader[attr.DataBaseColumn];
-                    entry.OriginalEntity[attrName] = value;
-                    if (!attr.IsShadowAttribute)
-                    {
-                        attr.InvokeSetter(entry.EntityObject, value);
-                    }
-                }
-                RegisterLazyLoader((TEntity) entry.EntityObject, entity, entry);
-                yield return (TEntity) entry.EntityObject;
+                RegisterLazyLoader((TEntity) cacheEntry.Object, cacheEntry.Entity, cacheEntry);
+                yield return (TEntity) cacheEntry.Object;
             }
         }
 
-        private void RegisterLazyLoader<T>(T entityObj, Entity entity, CacheEntry entry)
+        private void RegisterLazyLoader(object entityObj, Entity entity, CacheEntry entry)
         {
-            var property = typeof(T).GetProperties(BindingFlags.NonPublic | BindingFlags.Instance)
+            var property = entity.ClrType.GetProperties(BindingFlags.NonPublic | BindingFlags.Instance)
                 .FirstOrDefault(p => p.PropertyType.IsAssignableFrom(typeof(LazyLoader)));
             if (property != null && property.CanRead)
             {
@@ -101,7 +87,7 @@ namespace Csorm2.Core
         /// <param name="stmt"></param>
         /// <typeparam name="TEntity"></typeparam>
         /// <exception cref="Exception"></exception>
-        public void Insert<TEntity>(IStatement<TEntity> stmt)
+        public void Insert<TEntity>(InsertExpression<TEntity> stmt)
         {
             var conn = _connection;
             if(conn.State != ConnectionState.Open) conn.Open();
@@ -117,61 +103,44 @@ namespace Csorm2.Core
                 param.ParameterName = id;
                 cmd.Parameters.Add(param);
             }
-            using var reader = cmd.ExecuteReader();
-            using var returnValuePos = stmt.ReturnValuePositions.GetEnumerator();
-            var objectList = new List<TEntity>();
-            while (reader.Read() && returnValuePos.MoveNext())
-            {
-                var valuesForEntity = returnValuePos.Current;
-                if(valuesForEntity == null) break;
+            
+            using var reader = new CachedDataReader(
+                _ctx.Cache,
+                stmt.Entity,
+                cmd.ExecuteReader(),
+                _ctx
+            );
 
-                foreach (var (attr, obj) in valuesForEntity)
-                {
-                    var val = reader[attr.DataBaseColumn];
-                    attr.InvokeSetter(obj, val);
-                    objectList.Add(obj);
-                }
-            }
-
-            foreach (var obj in objectList)
+            var entries = reader
+                .ReadAllInto(stmt.InsertedObjects.Cast<object>())
+                .ToList();
+            
+            foreach (var cacheEntry in entries)
             {
-                var entity = stmt.Entity;
-                var pk = entity.PrimaryKeyAttribute.InvokeGetter(obj);
-                var entry = _ctx.Cache.GetOrInsert(entity, pk, obj);
-                
-                foreach (var (attrName, attr) in entity.Attributes)
-                {
-                    if (attr.IsEntityType)
-                    {
-                        if (attr.Relation is OneToMany)
-                        {
-                            var otherEntity = attr.Relation.ToEntity;
-                            var otherObj = attr.InvokeGetter(obj);
-                            if(otherObj == null) continue;
-                            var otherKey = otherEntity.PrimaryKeyAttribute.InvokeGetter(otherObj);
-                            if (otherKey == null) throw new Exception("Trying to insert entity with untracked related entity");
-                            entry.OriginalEntity[attr.Relation.FromKeyAttribute.Name] = otherKey;
-                        } 
-                        else
-                        {
-                            
-                        }
-                    }
-                    else if(!attr.IsShadowAttribute)
-                    {
-                        var value = obj == null ? null : attr.InvokeGetter(obj);
-                        entry.OriginalEntity[attrName] = value;
-                    }
-                    else
-                    {
-                        entry.OriginalEntity.GetOrInsert(attrName, null);
-                    }
-                }
-                RegisterLazyLoader(entry.EntityObject, entity, entry);
+                RegisterLazyLoader(cacheEntry.Object, cacheEntry.Entity, cacheEntry);
             }
         }
 
-        public void Update<TEntity>(IStatement<TEntity> stmt)
+        public void InsertStatement<T>(InsertExpression<T> stmt)
+        {
+            var conn = _connection;
+            if(conn.State != ConnectionState.Open) conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = stmt.AsSqlString();
+            cmd.Transaction = _transaction;
+
+            foreach (var (type, id, value) in stmt.GetParameters())
+            {
+                var param = cmd.CreateParameter();
+                param.Value = value ?? DBNull.Value;
+                param.DbType = type;
+                param.ParameterName = id;
+                cmd.Parameters.Add(param);
+            }
+            using var result = cmd.ExecuteReader();
+        }
+        
+        public void Update<TEntity>(UpdateStatement<TEntity> stmt)
         {
             var conn = _connection;
             if(conn.State != ConnectionState.Open) conn.Open();
@@ -186,28 +155,16 @@ namespace Csorm2.Core
                 param.ParameterName = id;
                 cmd.Parameters.Add(param);
             }
-            using var reader = cmd.ExecuteReader();
-            using var returnValuePos = stmt.ReturnValuePositions.GetEnumerator();
-            while (reader.Read() && returnValuePos.MoveNext())
+            
+            using var reader = new CachedDataReader(
+                _ctx.Cache,
+                stmt.Entity,
+                cmd.ExecuteReader(),
+                _ctx
+            );
+            
+            foreach (var _ in reader.ReadAll().ToList())
             {
-                var returns = returnValuePos.Current;
-                if(returns == null) break;
-
-                var entity = stmt.Entity;
-                var newPk = reader[entity.PrimaryKeyAttribute.DataBaseColumn];
-                var cacheEntry = _ctx.Cache.ObjectPool[entity].GetValueOrDefault(newPk)
-                                 ?? throw new Exception("Entity to update not found in local cache; Only managed entities can be updated");
-
-                foreach (var (attr, obj) in returns)
-                {
-                    if (attr.IsEntityType) continue;
-                    var value = reader[attr.DataBaseColumn];
-                    cacheEntry.OriginalEntity[attr.Name] = value;
-                    if (!attr.IsShadowAttribute)
-                    {
-                        attr.InvokeSetter(cacheEntry.EntityObject, value);
-                    }
-                }
             }
         }
 
@@ -227,7 +184,6 @@ namespace Csorm2.Core
                 cmd.Parameters.Add(param);
             }
             var affectedRows = cmd.ExecuteNonQuery();
-             
         }
         
         public void ExecuteDdl(string ddlString)
@@ -240,14 +196,11 @@ namespace Csorm2.Core
             try
             {
                 cmd.ExecuteNonQuery();
-                //transaction.Commit();
-                Console.WriteLine("Transaction successful");
             }
             catch (Exception ex)
             {
                 Console.WriteLine("Commit Exception Type: {0}", ex.GetType());
                 Console.WriteLine("  Message: {0}", ex.Message);
-                //transaction.Rollback();
             }
         }
 

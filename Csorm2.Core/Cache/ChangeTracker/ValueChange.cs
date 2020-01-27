@@ -1,61 +1,12 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using Csorm2.Core.Metadata;
 using Attribute = Csorm2.Core.Metadata.Attribute;
 
 namespace Csorm2.Core.Cache.ChangeTracker
 {
-    public class Changes
-    {
-        public Changes(Entity entity, object obj, object primaryKey)
-        {
-            Entity = entity;
-            this.Obj = obj;
-            PrimaryKey = primaryKey;
-        }
-
-        private Entity Entity { get; set; }
-        public object Obj { get; set; }
-        private object PrimaryKey { get; set; }
-        private ISet<IValueChange> ValueChanges { get; } = new HashSet<IValueChange>();
-
-
-        public void AddChange(IValueChange change)
-        {
-            ValueChanges.Add(change);
-        }
-
-        public bool HasChanges()
-        {
-            return ValueChanges.Count > 0;
-        }
-
-        public IEnumerable<IValueChange> ChangesValues()
-        {
-            return ValueChanges;
-        }
-
-        public Changes AddChanges(Changes otherChanges)
-        {
-            if (this.Entity == otherChanges.Entity
-                || this.PrimaryKey == otherChanges.PrimaryKey)
-                throw new ArgumentException("Changes can only be added to changes of the same entity type and object");
-
-            foreach (var valueChange in otherChanges.ValueChanges)
-            {
-                if (ValueChanges.Contains(valueChange))
-                    throw new ArgumentException("Changes were already tracked by other this change object");
-
-                ValueChanges.Add(valueChange);
-            }
-            return this;
-        }
-    }
-
-
     public interface IValueChange
     {
+        object EntityObj { get; }
         object OldValue { get; }
         object NewValue { get; }
         Entity Entity { get; }
@@ -64,14 +15,16 @@ namespace Csorm2.Core.Cache.ChangeTracker
 
     public class ValueChange: IValueChange
     {
-        public ValueChange(Entity entity, Attribute attribute, object oldValue, object newValue)
+        public ValueChange(Entity entity, Attribute attribute,  object entityObj, object oldValue, object newValue)
         {
             Entity = entity;
             Attribute = attribute;
             OldValue = oldValue;
             NewValue = newValue;
+            EntityObj = entityObj;
         }
 
+        public object EntityObj { get; }
         public Entity Entity { get; }
         public Attribute Attribute { get; }
         public object OldValue { get; }
@@ -121,10 +74,12 @@ namespace Csorm2.Core.Cache.ChangeTracker
         public Attribute NewAttr { get; }
         public Attribute Attribute => OldAttr;
         public Attribute OldAttr { get; }
+
+        public object EntityObj => _newEntity;
+        
         public object OldValue => OldAttr.InvokeGetter(_oldEntity);
         public object NewValue => NewAttr.InvokeGetter(_newEntity);
-
-
+        
         protected bool Equals(DelayedValueChange other)
         {
             return Equals(_oldEntity, other._oldEntity) && Equals(_newEntity, other._newEntity) && Equals(Entity, other.Entity) && Equals(Attribute, other.Attribute);
@@ -134,8 +89,8 @@ namespace Csorm2.Core.Cache.ChangeTracker
         {
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != this.GetType()) return false;
-            return Equals((DelayedValueChange) obj);
+            return obj.GetType() == this.GetType() 
+                   && Equals((DelayedValueChange) obj);
         }
 
         public override int GetHashCode()

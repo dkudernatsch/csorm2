@@ -8,7 +8,7 @@ namespace Csorm.SampleProject
 {
     public class SampleDbContext: DbContext
     {
-        public SampleDbContext(Func<IDbConnection> connection, bool createDb = false) : base(connection, createDb)
+        public SampleDbContext(Func<IDbConnection> connection) : base(connection)
         {
         }
         

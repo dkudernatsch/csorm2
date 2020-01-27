@@ -7,7 +7,7 @@ namespace Csorm.SampleProject.Model
     public class Course
     {
         private Teacher _teacher;
-        private ICollection<Student> _students;
+        private ICollection<Student> _students = new List<Student>();
 
         private ILazyLoader Lazy { get; set; } = new LazyLoader();
 

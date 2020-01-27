@@ -32,7 +32,7 @@ namespace Csorm2.Core.Query.Update
         }
     }
 
-    public class UpdateSetBuilder<TEntity>
+   public class UpdateSetBuilder<TEntity>
     {
         private DbContext _context;
         private Entity _entity;
@@ -49,7 +49,7 @@ namespace Csorm2.Core.Query.Update
         }
     }
 
-    public class UpdateStatement<TEntity> : IStatement<TEntity>
+    public class UpdateStatement<TEntity> : ISqlExpression
     {
         private DbContext _context;
         public Entity Entity { get; }
@@ -77,7 +77,7 @@ namespace Csorm2.Core.Query.Update
 
         public string AsSqlString()
         {
-            var update = _changes.Aggregate("",
+           var update = _changes.Aggregate("",
                 (acc, change) => acc == ""
                     ? $"{change.Attribute.DataBaseColumn} = @{change.Attribute.DataBaseColumn}0"
                     : acc + $", {change.Attribute.DataBaseColumn} = @{change.Attribute.DataBaseColumn}0");
@@ -87,7 +87,10 @@ namespace Csorm2.Core.Query.Update
                 _returningAttributes.Aggregate("", (acc, attr) => acc == "" ? attr.DataBaseColumn : acc + ", " + attr.DataBaseColumn);
             var returning = $"RETURNING {returningAttrs}";
             var where = $"WHERE {_whereClause.AsSqlString()}";
-            return $"{table} {set} {where} {returning}";
+            return $"{table} " +
+                   $"{set}" +
+                   $" {where}" +
+                   $" {returning}";
         }
 
         public IEnumerable<(DbType, string, object)> GetParameters()
@@ -98,10 +101,5 @@ namespace Csorm2.Core.Query.Update
                 return (c.Attribute.DatabaseType.Value, c.Attribute.DataBaseColumn + '0', c.NewValue);
             }).Concat(_whereClause.GetParameters());
         }
-
-        public IEnumerable<IEnumerable<(Attribute, TEntity)>> ReturnValuePositions => new[]
-            {
-                _returningAttributes.Select(attr => (attr, _object))
-            };
     }
 }
