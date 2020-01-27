@@ -46,7 +46,7 @@ namespace Csorm2.Core.Metadata
                 {typeof(DateTimeOffset?), DbType.DateTimeOffset}
             }
         );
-
+        
         private static readonly ReadOnlyDictionary<DbType, string> _ddlMap = new ReadOnlyDictionary<DbType, string>(
             new Dictionary<DbType, string>
             {

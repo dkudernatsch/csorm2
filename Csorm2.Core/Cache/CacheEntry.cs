@@ -25,24 +25,33 @@ namespace Csorm2.Core.Cache
         private DbContext _context;
         public Entity Entity { get; }
         public object Object { get; }
-
+        /// <summary>
+        /// Primary key of the CacheEntry
+        /// </summary>
         public object PrimaryKey => Entity.PrimaryKeyAttribute.InvokeGetter(Object);
-
+        
+        /// <summary>
+        /// original values fetched from the database
+        /// each time the values are refetched they are updated here 
+        /// </summary>
         public Dictionary<string, object> OriginalValues { get; } = new Dictionary<string, object>();
-
+        /// <summary>
+        /// Values of attributes not directly in the c# objects eg foreign key values
+        /// </summary>
         public Dictionary<string, object> ShadowAttributes { get; } = new Dictionary<string, object>();
-
-
+        /// <summary>
+        /// Each relation once fetched tracks a list of related primary keys
+        /// if the list does not match during changeTracking upadate are generated
+        /// </summary>
         private Dictionary<string, ISet<object>> _relatedKeys = new Dictionary<string, ISet<object>>();
 
-        public void AddRelatedKeys(Attribute attribute, IEnumerable<object> keys)
-        {
-            if (!attribute.IsEntityType)
-                throw new Exception("Attribute must be a relation in order to associate it with related keys");
-            var set = _relatedKeys.GetOrInsert(attribute.Name, new SortedSet<object>());
-            set.UnionWith(keys);
-        }
-
+        /// <summary>
+        /// Replaces the related keys of this CacheEntry
+        /// Related keys are used to determine whether an update to a OneToMany or ManyToMany relation has been made
+        /// </summary>
+        /// <param name="attribute"></param>
+        /// <param name="keys"></param>
+        /// <exception cref="Exception"></exception>
         public void ReplaceRelatedKeys(Attribute attribute, IEnumerable<object> keys)
         {
             if (!attribute.IsEntityType)
@@ -51,7 +60,11 @@ namespace Csorm2.Core.Cache
             set.Clear();
             set.UnionWith(keys);
         }
-
+        
+        /// <summary>
+        /// Generates a list of changes of the current object as differences between Object and Original Values
+        /// </summary>
+        /// <returns></returns>
         public IEnumerable<IValueChange> ValueChanges()
         {
             return Entity.Attributes.Values
